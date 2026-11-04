@@ -27,7 +27,7 @@ sources/                 빌드가 따로 필요한 확장의 원본 (catalog �
 ## 새 버전 올리는 법
 
 1. `extensions/<폴더>/` 의 파일을 고친다.
-2. `extension.json` 의 `version` 을 올린다 (`1.2.3` 꼴). 바뀐 것을 업데이트 창에 보이려면 `"changes": ["…"]` 를 적는다 (선택).
+2. `extension.json` 의 `version` 을 올린다 (`1.2.3` 꼴). 바뀐 것을 업데이트 창에 보이려면 그 폴더에 `changes.txt` 를 두고 한 줄에 하나씩 적는다 (선택 — zip 에는 들어가지 않고 catalog 의 `changes` 로만 간다. `extension.json` 에 적으면 앱이 모르는 필드로 설치를 거절한다).
 3. 내보내고 올린다.
 
 ```bash

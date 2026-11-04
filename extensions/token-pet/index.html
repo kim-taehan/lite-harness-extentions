@@ -306,8 +306,10 @@ const EGG = { id: 'egg', name: '빛알', pal: { o: '#2b3448', a: '#f4f6fb', b: '
   '...oooooooo...',
 ] }] }
 
-const HATCH = 50_000
-const BASE = [200_000, 800_000, 2_000_000]
+// 기준 (#1186) — 턴 하나가 맥락 전체를 실어 수십만~백만 토큰이다(캐시는 반만 친다). 흔한 종 기준 하루 50턴이면
+// 부화 ~1시간 · 2단계 반나절 · 3단계 2~3일 · 졸업 ~6일. 보통 ×1.25, 드묾 ×2
+const HATCH = 5_000_000
+const BASE = [30_000_000, 120_000_000, 300_000_000]
 const SPEC = {
   squirrel: { weight: 60, mult: 1, speed: 52, lines: ['버그 냄새!', '빨리빨리!', '찌릿!'] },
   sheep: { weight: 30, mult: 1.25, speed: 30, lines: ['음… 5분만…', '커피…', 'Zzz'] },
@@ -460,16 +462,18 @@ function render() {
   document.getElementById('todayTokens').textContent = summary ? compact(summary.today.tokens) : '—'
   document.getElementById('todayTurns').textContent = summary ? String(summary.today.turns) : '—'
   document.getElementById('days').textContent = `${Math.max(1, Math.floor((Date.now() - state.startedAt) / 86_400_000) + 1)}일`
+  // 도감은 졸업한(3단계) 몬스터만 (#1186) — 종마다 한 칸, 몇 번 졸업했는지 함께
   const dex = document.getElementById('dex')
   dex.innerHTML = ''
   let seen = 0
-  for (const s of SPECIES) s.stages.forEach((stg, i) => {
-    const known = state.seen.includes(`${s.id}:${i}`)
-    if (known) seen++
-    const d = document.createElement('div'); if (!known) d.className = 'unknown'; d.title = known ? stg.name : '???'
-    const c = document.createElement('canvas'); drawSprite(c, s, i, 0, 2); d.appendChild(c); dex.appendChild(d)
-  })
-  document.getElementById('dexTitle').textContent = `도감 ${seen} / ${SPECIES.reduce((n, s) => n + s.stages.length, 0)}${state.graduated.length ? ` · 졸업 ${state.graduated.length}` : ''}`
+  for (const s of SPECIES) {
+    const count = state.graduated.filter((g) => g.id === s.id).length
+    if (count > 0) seen++
+    const last = s.stages.length - 1
+    const d = document.createElement('div'); if (!count) d.className = 'unknown'; d.title = count ? `${s.stages[last].name} · 졸업 ${count}번` : '???'
+    const c = document.createElement('canvas'); drawSprite(c, s, last, 0, 2); d.appendChild(c); dex.appendChild(d)
+  }
+  document.getElementById('dexTitle').textContent = `도감 ${seen} / ${SPECIES.length}${state.graduated.length ? ` · 졸업 ${state.graduated.length}` : ''}`
   if (hero) hero.refresh()
 }
 
@@ -547,7 +551,8 @@ function setField(on) {
   for (const f of friends) f.remove()
   friends = []
   if (on) {
-    const others = state.seen.map((key) => key.split(':')).filter(([id, st]) => !(id === state.species && Number(st) === stageOf(state).stage)).slice(-4)
+    // 같이 노는 친구 = 졸업한 몬스터(3단계), 종마다 하나 (#1186)
+    const others = [...new Set(state.graduated.map((g) => g.id))].slice(-4).map((id) => [id, byId(id).stages.length - 1])
     for (const [id, st] of others) {
       const sp = byId(id)
       friends.push(walker(() => ({ sp, stage: Number(st), scale: 4, speed: SPEC[id].speed, lines: SPEC[id].lines }), { vertical: true }))

@@ -37,12 +37,15 @@ function release(folder, catalog) {
   const zipFile = path.join(distDir, zipName)
   rmSync(zipFile, { force: true })
   // -X: 여분 속성 없이 · -r: 하위 폴더 · -q: 조용히. 폴더 안에서 묶어 zip 맨 위에 extension.json 이 오게
-  execFileSync('zip', ['-qrX', zipFile, '.', '-x', '.DS_Store', '*/.DS_Store'], { cwd: path.join(extensionsDir, folder) })
+  execFileSync('zip', ['-qrX', zipFile, '.', '-x', '.DS_Store', '*/.DS_Store', 'changes.txt'], { cwd: path.join(extensionsDir, folder) })
   const versioned = new RegExp(`^${id.replace(/[-]/g, '\\-')}-\\d+\\.\\d+\\.\\d+\\.zip$`) // 플랫폼 zip(-darwin-arm64.zip)은 건드리지 않는다
   for (const old of readdirSync(distDir)) if (versioned.test(old) && old !== zipName) rmSync(path.join(distDir, old))
   const sha256 = createHash('sha256').update(readFileSync(zipFile)).digest('hex')
   const previous = catalog.extensions.find((entry) => entry.id === id)
-  const changes = Array.isArray(manifest.changes) ? manifest.changes : previous && previous.version === version ? previous.changes : undefined
+  // 바뀐 것 — extensions/<폴더>/changes.txt 의 줄(이번 버전 것만 적는다, zip 에는 안 들어간다). 없으면 같은 버전의 옛 항목 것
+  const changesFile = path.join(extensionsDir, folder, 'changes.txt')
+  const lines = existsSync(changesFile) ? readFileSync(changesFile, 'utf8').split('\n').map((line) => line.replace(/^[-*·]\s*/, '').trim()).filter(Boolean) : []
+  const changes = lines.length > 0 ? lines : previous && previous.version === version ? previous.changes : undefined
   const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...(Array.isArray(changes) && changes.length > 0 && { changes }) }
   catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && !item.platform)), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
   console.log(`✓ ${id} ${version} → dist/${zipName}`)
