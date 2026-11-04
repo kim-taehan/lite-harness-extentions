@@ -38,22 +38,50 @@ function release(folder, catalog) {
   rmSync(zipFile, { force: true })
   // -X: 여분 속성 없이 · -r: 하위 폴더 · -q: 조용히. 폴더 안에서 묶어 zip 맨 위에 extension.json 이 오게
   execFileSync('zip', ['-qrX', zipFile, '.', '-x', '.DS_Store', '*/.DS_Store'], { cwd: path.join(extensionsDir, folder) })
-  for (const old of readdirSync(distDir)) if (old.startsWith(`${id}-`) && old.endsWith('.zip') && old !== zipName) rmSync(path.join(distDir, old))
+  const versioned = new RegExp(`^${id.replace(/[-]/g, '\\-')}-\\d+\\.\\d+\\.\\d+\\.zip$`) // 플랫폼 zip(-darwin-arm64.zip)은 건드리지 않는다
+  for (const old of readdirSync(distDir)) if (versioned.test(old) && old !== zipName) rmSync(path.join(distDir, old))
   const sha256 = createHash('sha256').update(readFileSync(zipFile)).digest('hex')
   const previous = catalog.extensions.find((entry) => entry.id === id)
   const changes = Array.isArray(manifest.changes) ? manifest.changes : previous && previous.version === version ? previous.changes : undefined
   const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...(Array.isArray(changes) && changes.length > 0 && { changes }) }
-  catalog.extensions = [...catalog.extensions.filter((item) => item.id !== id), entry].sort((a, b) => (a.id < b.id ? -1 : 1))
+  catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && !item.platform)), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
   console.log(`✓ ${id} ${version} → dist/${zipName}`)
+}
+
+/** 따로 묶은 zip 을 올린다 (SonarQube 처럼 플랫폼 전용 실행 파일이 든 확장) — zip 안의 extension.json 으로 항목을 만들고, platform 이 있으면
+ *  dist/<id>-<version>-<platform>.zip 로 둔다. 앱은 지금 PC 의 `<process.platform>-<process.arch>`(예: darwin-arm64 · win32-x64)와 같은 것만 보인다 */
+function releaseZip(file, platform, catalog) {
+  const manifest = JSON.parse(execFileSync('unzip', ['-p', file, 'extension.json'], { encoding: 'utf8' }))
+  const { id, name, description, version } = manifest
+  if (!id || !VERSION.test(version ?? '')) throw new Error(`${file}: zip 안 extension.json 의 id·version 이 필요합니다`)
+  if (platform !== undefined && !/^[a-z0-9]+-[a-z0-9]+$/.test(platform)) throw new Error(`--platform 은 darwin-arm64 · win32-x64 꼴입니다`)
+  const zipName = `${id}-${version}${platform ? `-${platform}` : ''}.zip`
+  const target = path.join(distDir, zipName)
+  writeFileSync(target, readFileSync(file))
+  const prefix = `${id}-`
+  const suffix = platform ? `-${platform}.zip` : '.zip'
+  for (const old of readdirSync(distDir)) if (old !== zipName && old.startsWith(prefix) && old.endsWith(suffix) && (platform || !/-[a-z0-9]+-[a-z0-9]+\.zip$/.test(old))) rmSync(path.join(distDir, old))
+  const sha256 = createHash('sha256').update(readFileSync(target)).digest('hex')
+  const changes = Array.isArray(manifest.changes) ? manifest.changes : undefined
+  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...(platform && { platform }), ...(changes?.length && { changes }) }
+  catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && (item.platform ?? '') === (platform ?? ''))), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
+  console.log(`✓ ${id} ${version}${platform ? ` (${platform})` : ''} → dist/${zipName}`)
 }
 
 const args = process.argv.slice(2)
 if (args.length === 0) {
-  console.error('쓰는 법: npm run release <id 또는 폴더> · npm run release -- --all')
+  console.error('쓰는 법: npm run release <id 또는 폴더> · npm run release -- --all · npm run release -- --zip <묶은.zip> [--platform darwin-arm64]')
   process.exit(1)
 }
 mkdirSync(distDir, { recursive: true })
 const catalog = readCatalog()
+const zipAt = args.indexOf('--zip')
+if (zipAt !== -1) {
+  const platformAt = args.indexOf('--platform')
+  releaseZip(path.resolve(args[zipAt + 1]), platformAt === -1 ? undefined : args[platformAt + 1], catalog)
+  writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`)
+  process.exit(0)
+}
 const all = folders()
 const targets = args.includes('--all') ? all : args.map((arg) => all.find((folder) => folder === arg || manifestOf(folder).id === arg) ?? arg)
 for (const folder of targets) {

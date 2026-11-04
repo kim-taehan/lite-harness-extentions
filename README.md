@@ -65,4 +65,14 @@ git add -A && git commit -m "<id> 1.2.3" && git push
 ## 빌드가 따로 필요한 확장
 
 - **SQL 튜닝** (`extensions/sql-tuning/`) — litecode 저장소의 `extensions/dev-tools/sql-tuning` 을 `node scripts/pack-sql-tuning.mjs` 로 묶은 결과(서버가 한 파일로 묶여 있다)를 넣었다. 원본을 고치면 litecode 쪽에서 다시 묶어 이 폴더를 바꾼 뒤 `npm run release sql-tuning`.
-- **SonarQube** (`sources/sonarqube/`) — 분석기(Java 런타임 + SonarScanner, 약 100MB)를 플랫폼별로 넣어 묶어야 해서 catalog 에 없다. 묶는 법은 그 폴더의 README. 묶은 zip 은 zip 설치로 쓴다.
+- **SonarQube** (`sources/sonarqube/`) — 분석기(Java 런타임 + SonarScanner, 약 100MB)를 플랫폼별로 넣어 묶는다(묶는 법은 그 폴더의 README, litecode 의 `scripts/fetch-sonarqube.mjs`). 묶은 zip 은 플랫폼을 붙여 올린다:
+
+  ```bash
+  npm run release -- --zip <묶은 sonarqube.zip> --platform darwin-arm64
+  ```
+
+  catalog 항목에 `"platform": "darwin-arm64"` 가 붙고, 앱은 지금 PC 의 플랫폼(`darwin-arm64` · `darwin-x64` · `win32-x64` …)과 같은 항목만 보인다. 지금은 mac(Apple 칩)판만 있다.
+
+## catalog 항목의 platform
+
+`platform` 이 없는 항목은 모든 PC 에 보인다. 있으면 `<os>-<cpu>`(Node 의 `process.platform`-`process.arch`)가 같은 PC 에만 보인다. 같은 id 를 플랫폼마다 한 줄씩 둘 수 있다.

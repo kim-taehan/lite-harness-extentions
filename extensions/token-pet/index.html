@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>빛톨 키우기</title>
+<style>
+/* 빛톨 키우기 (이슈 #1182) — 패널: 걷는 몬스터 무대 · 이름/진행 · 오늘 · 도감. 전체 화면(⤢): 무대가 창 전체가 되고 도감 친구들과 돌아다닌다 */
+:root {
+  --bg: #ffffff; --panel: #f5f6f7; --module: #eceef1; --text: #0f1115; --text-2: #61666b; --text-3: #81858c; --border: rgba(0,0,0,.1);
+  --accent: #4176e6; --sky: #cfe4ff; --grass: #8cc56f; --grass-top: #a8d98a; --danger: #d64545;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #151517; --panel: #1f1f21; --module: #2c2c2e; --text: #f9fafb; --text-2: #cfd3d6; --text-3: #9aa0a6; --border: rgba(255,255,255,.1); --accent: #6b97f2; --sky: #23324d; --grass: #3f6b35; --grass-top: #4f8242; --danger: #f06a6a; color-scheme: dark }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 13px/1.5 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif; }
+canvas { image-rendering: pixelated; display: block; }
+.app { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 560px; margin: 0 auto; }
+.stage { position: relative; height: 220px; border-radius: 14px; overflow: hidden; background: linear-gradient(to bottom, var(--sky) 0 64%, var(--grass-top) 64% 66%, var(--grass) 66%); }
+.walker { position: absolute; left: 0; top: 0; cursor: pointer; will-change: transform; }
+.say { position: absolute; bottom: 100%; left: 50%; transform: translate(-30%, -4px); background: #fff; color: #333; border: 2px solid #2e1a0c; border-radius: 10px; padding: 2px 8px; font-size: 12px; white-space: nowrap; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.walker.talk .say { opacity: 1; }
+.full { position: absolute; top: 8px; left: 8px; z-index: 3; width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(0,0,0,.12); background: rgba(255,255,255,.92); color: #333; cursor: pointer; font-size: 14px; }
+.who { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.who b { font-size: 16px; margin-right: 2px; }
+.chip { font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: var(--module); color: var(--text-2); }
+.bar { height: 8px; border-radius: 99px; background: var(--module); overflow: hidden; margin-top: 8px; }
+.bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #f0974a, #ffd23f); transition: width .4s; }
+.barline { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-3); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--panel); border-radius: 10px; padding: 7px 10px; }
+.stat b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11.5px; color: var(--text-3); }
+h2 { font-size: 13.5px; margin: 4px 0 0; }
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; }
+.dex div { aspect-ratio: 1; border-radius: 10px; background: var(--panel); display: grid; place-items: center; }
+.dex canvas { max-width: 82%; max-height: 82%; }
+.dex .unknown canvas { filter: brightness(0); opacity: .16; }
+.note { font-size: 12px; color: var(--text-3); }
+.error { font-size: 12.5px; color: var(--danger); }
+.error:empty { display: none; }
+/* 전체 화면 — 무대가 창 전체 */
+body.field .app { max-width: none; height: 100%; padding: 0; gap: 0; }
+body.field .app > :not(.stage) { display: none; }
+body.field .stage { height: 100%; border-radius: 0; background: linear-gradient(to bottom, var(--sky) 0 26%, var(--grass-top) 26% 27%, var(--grass) 27%); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage"><button type="button" class="full" id="full" title="전체 화면" aria-label="전체 화면">⤢</button></div>
+  <div>
+    <div class="who" id="who"></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="barline"><span id="barLabel"></span><span id="barValue"></span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="todayTokens">—</b><span>오늘 토큰</span></div>
+    <div class="stat"><b id="todayTurns">—</b><span>오늘 턴</span></div>
+    <div class="stat"><b id="days">—</b><span>함께한 날</span></div>
+  </div>
+  <p class="error" id="error"></p>
+  <h2 id="dexTitle">도감</h2>
+  <div class="dex" id="dex"></div>
+  <p class="note">설치한 뒤에 AI 에 쓴 토큰을 먹고 자랍니다. 캐시로 읽은 토큰은 반만 칩니다. 기록은 이 PC 에만 남습니다.</p>
+</div>
+<script>
+// 몬스터 그림 — 원본 도트(글자 하나 = 픽셀 하나). L·R 은 걷기 발(프레임마다 번갈아)
+const SPECIES = [
+  {
+    id: 'squirrel', name: '번개 다람쥐', note: '버그를 잡아먹는다 · 성격: 급함', rarity: '흔함',
+    pal: { o: '#2e1a0c', a: '#f0974a', b: '#ffc98f', c: '#b9612a', f: '#fff3e2', e: '#1a1a1a', w: '#ffffff', p: '#ffd0b8', d: '#2f8cff', g: '#9fe0ff', L: '#b9612a', R: '#b9612a' },
+    stages: [
+      { name: '찌릿다람', line: '버그 냄새가 난다!', px: [
+        '..............oooo....',
+        '.............oddddo...',
+        '...oo....oo..oddgddo..',
+        '..oabo..obao.oddggdo..',
+        '..oaabooobaaooddddo...',
+        '..oaaaaaaaaaaooddo....',
+        '.oaaaaaaaaaaaaooddo...',
+        '.oaaewaaaaewaaooddo...',
+        '.oaaeeaaaaeeaaoddo....',
+        '.opaaaaooaaaapoddo....',
+        '.oaaaaaaaaaaaaooo.....',
+        '..oaafffffffaao.......',
+        '..oafffffffffao.......',
+        '...oaffffffffo........',
+        '....oaaooaaao.........',
+        '....oLo..oRo..........',
+        '.....o....o...........',
+      ] },
+      { name: '번쩍다람', line: '찌릿! 테스트 통과!', px: [
+        '.....................oooo...',
+        '....................oddgdo..',
+        '...ooo.......ooo...oddggdo..',
+        '..oabbo.....obbao..oddddo...',
+        '..oaabbo...obbaaooooddo.....',
+        '..oaaaaoooooaaaaooddddo.....',
+        '..oaaaaaaaaaaaaaaoddgddo....',
+        '.oaaaaaaaaaaaaaaaooddddo....',
+        '.oaaaewwaaaaawweaaooddo.....',
+        '.oaaaeeeaaaaaeeeaaooddo.....',
+        '.oaaaeeeaaaaaeeeaaoddddo....',
+        '.oppaaaaaaoaaaaappoddgddo...',
+        '.oaaaaaaaaoooaaaaaooddddo...',
+        '..oaaaaaaaaaaaaaaaoooddo....',
+        '..ooaafffffffffaaoo..oo.....',
+        '.oaooafffffffffaoooao.......',
+        '.oaa.offfffffffo..aao.......',
+        '..o..ooffffffffo...o........',
+        '......oaaoooaaoo............',
+        '.....oaLLo.oaRRo............',
+        '.....ooooo.ooooo............',
+      ] },
+      { name: '뇌전다람', line: '배포는 내가 지킨다', px: [
+        '..........d.................oooo..',
+        '.........dd.......d........oddddo.',
+        '...oooo..d.......dd.ooo...odgggddo',
+        '..oabbbo.......ooddobbao..oddgggdo',
+        '..oaabbbo.....oabbbbbaaooooddddddo',
+        '..oaaaabbooooobaaaaaaaaooddddgdddo',
+        '..oaaaaaaaaaaaaaaaaaaaaoddddggddo.',
+        '.oaaaaaaaaaaaaaaaaaaaaaooddddddo..',
+        '.oaaaccaaaaaaaaaaaccaaaooddgddo...',
+        '.oaacewwaaaaaaaaawwecaaoodddddo...',
+        '.oaaceeeoaaaaaaaoeeecaaoddddo.....',
+        '.oaaaeeeaaaaaaaaaeeeaaaoddggdo....',
+        '.opppaaaaaaooaaaaaaapppoddddddo...',
+        '.oaaaaaaaaoddoaaaaaaaaaooddddo....',
+        '..oaaaaaaaaooaaaaaaaaaoooooddo....',
+        '.oooaaaaaaaaaaaaaaaaaoo.ooddo.....',
+        'oaaoaaffffffffffffaaoaao.oo.......',
+        'oabaaafffffffffffffaaaabo.........',
+        'oaao.offffffffffffffo.oao.........',
+        '.oo..offffffffffffffo..oo.........',
+        '.....ooffffffffffffoo.............',
+        '......oaaaoooooaaaao..............',
+        '.....oaaLLo...oaRRao..............',
+        '.....ooooo.....ooooo..............',
+      ] },
+    ],
+  },
+  {
+    id: 'sheep', name: '구름 양', note: '커피 김에서 태어남 · 성격: 늘 졸림', rarity: '보통',
+    pal: { o: '#3a2c2a', a: '#ffffff', b: '#ffffff', c: '#d8dbe6', f: '#8a5a3c', e: '#1a1a1a', w: '#ffffff', p: '#ff9bb0', d: '#6b4430', g: '#c58b5c', h: '#f1c79a', L: '#6b4430', R: '#6b4430' },
+    stages: [
+      { name: '김양', line: '음… 5분만 더…', px: [
+        '.......ooo.ooo.......',
+        '.....ooaaaoaaaoo.....',
+        '....oaaaaaaaaaaao....',
+        '...oaaacaaaaacaaao...',
+        '..ooaaaoooooooaaaoo..',
+        '.oaaaoogggggggoaaaao.',
+        '.oaacoggggggggoocaao.',
+        '..oooghhgggghhgoooo..',
+        '...ogeegggggeeggo....',
+        '...oggggggggggggo....',
+        '...ogpggggogggpgo....',
+        '....oggggooogggo.....',
+        '..ooaooggggggooaoo...',
+        '.oaaaaaoooooooaaaao..',
+        '.oaacaaaaaaaaaacaao..',
+        '..oaaaaaaaaaaaaaao...',
+        '...oooooooooooooo....',
+        '....odLo....oRdo.....',
+        '....ooo......ooo.....',
+      ] },
+      { name: '뭉게양', line: '커피 리필 하실 분?', px: [
+        '........oooo.oooo........',
+        '......ooaaaaoaaaaoo......',
+        '.....oaaaaaaaaaaaaao.....',
+        '....oaaacaaaaaacaaaao....',
+        '..ooaaaaaoooooooaaaaoo...',
+        '.oaaaaaoogggggggooaaaao..',
+        '.oaacaoggggggggggocaaao..',
+        'oddooogghhgggghhggoooddo.',
+        'odddoggeeegggggeeegoddo..',
+        '.oddogggwgggggggwggodo...',
+        '..oooggggggggggggggo.....',
+        '....ogpgggggggggpggo.....',
+        '...ooggggggoooggggoo.....',
+        '..oaaooggggggggggooaao...',
+        '.oaaaaaoooooooooooaaaao..',
+        'oaacaaaaaaaaaaaaaaaacaao.',
+        'oaaaaaaaaaaaaaaaaaaaaaao.',
+        '.oaaacaaaaaaaaaaaacaaao..',
+        '..oooaaaaaaaaaaaaaaooo...',
+        '....oooooooooooooooo.....',
+        '....odddo.....odddo......',
+        '....oLLdo.....odRRo......',
+        '....ooooo.....ooooo......',
+      ] },
+      { name: '폭풍양', line: '마감 전날엔 깨어난다', px: [
+        '...........oooo.oooo.oooo.....',
+        '.........ooaaaaoaaaaoaaaaoo...',
+        '..oooo..oaaaaaaaaaaaaaaaaaao..',
+        '.oddddooaaacaaaaaaaaaaacaaaao.',
+        'oddgddoaaaaaaaooooooooaaaaaao.',
+        'oddoodoaaaaaooggggggggooaaaao.',
+        'odo.ooaaacaoggggggggggggocaaao',
+        'odo.oaaaaaogghhhggggghhhggoaao',
+        '.oddoooooogeeeeggggggeeeegooo.',
+        '..ooo.oddogewwegggggggewwegodo',
+        '......oddoggeeggggggggggeeggodo',
+        '.......ooogggggggggggggggggo.o',
+        '.........ogpppgggoogggpppgo...',
+        '........ooggggggoddogggggoo...',
+        '.......oaaooggggggggggggooaao.',
+        '......oaaaaaooooooooooooaaaaao',
+        '.....oaacaaaaaaaaaaaaaaaaacaao',
+        '....oaaaaaaaaaaaaaaaaaaaaaaaao',
+        '....oaaaaacaaaaaaaaaaacaaaaao.',
+        '....oaacaaaaaaaaaaaaaaaaacaao.',
+        '.....oaaaaaaaaaaaaaaaaaaaaao..',
+        '......ooooaaaaaaaaaaaaaaoooo..',
+        '.........oooooooooooooooo.....',
+        '.........oddddo....oddddo.....',
+        '.........odLLdo....odRRdo.....',
+        '.........oooooo....oooooo.....',
+      ] },
+    ],
+  },
+  {
+    id: 'turtle', name: '용암 거북', note: '서버 열기로 큰다 · 성격: 느긋·든든', rarity: '드묾',
+    pal: { o: '#1f2a24', a: '#6fbf8e', b: '#a8e3bd', c: '#3f8a5f', f: '#f3e3b0', e: '#1a1a1a', w: '#ffffff', p: '#ff9b8a', d: '#5b4a42', g: '#ff7a1a', h: '#ffd23f', L: '#3f8a5f', R: '#3f8a5f' },
+    stages: [
+      { name: '온돌북', line: '따뜻해서 좋다~', px: [
+        '.......oooooo...........',
+        '.....oodddddoo..........',
+        '....odddgdddddo.........',
+        '...oddghgddgdddo..ooo...',
+        '..odddgdddghgdddooaaao..',
+        '..oddddddddgddddoaaaaao.',
+        '.oooooooooooooooaewaaao.',
+        'oaaffffffffffffoaeeaapo.',
+        '.oaaaaaaaaaaaaaooaaaao..',
+        '..oaaooaaaaooaao.oooo...',
+        '..oLLo.oaao.oRRo........',
+        '..oooo..oo..oooo........',
+      ] },
+      { name: '화산북', line: '로그가 쌓일수록 든든', px: [
+        '.........ooo.................',
+        '........oghgo................',
+        '.......oogggoo...............',
+        '.....oodddddddoo.............',
+        '....odddgddddddddo...........',
+        '...oddghgddddgddddo..oooo....',
+        '..odddgddddddhgddddooaaaao...',
+        '..oddddddgddddgdddooaaaaaao..',
+        '.oddddddghgdddddddoaaaaaaao..',
+        '.oddgdddggddddgdddoaaewwaao..',
+        'oooooooooooooooooooaaeeeaao..',
+        'oaaffffffffffffffffoaaeeaapo.',
+        'oaaaffffffffffffffooaaaaaao..',
+        '.oaaaaaaaaaaaaaaaooo.oaooo...',
+        '..oaaaooaaaaaooaaao..........',
+        '..oaLLo.oaaao.oRRao..........',
+        '..ooooo..ooo..ooooo..........',
+      ] },
+      { name: '용암요새', line: '내 등 위에선 장애 없음', px: [
+        '.........o.o.o.o...................',
+        '.........ohohoho...................',
+        '........oooooooooo.................',
+        '........oddhdhdhdo.................',
+        '......ooddddddddddoo...............',
+        '.....odddddddddddddddo.............',
+        '....oddgghddddddghgdddo............',
+        '...oddddgddddddddgdddddo...ooooo...',
+        '..oddddddddgghdddddddddoo.oaaaaao..',
+        '..odddghdddddgddddddghddooaaaaaaao.',
+        '.oddddgdddddddddgdddgdddoaaccaaaao.',
+        '.oddddddddghgdddgddddddooaawwaccao.',
+        '.oddddgddddgddddddghddoaaaeeeaaao..',
+        'ooooooooooooooooooooooooaaaeeaaapo.',
+        'obbaffffffffffffffffffooaaaaaaaao..',
+        'oaaaffffffffffffffffffooaaoooooo...',
+        '.oaaaaaaaaaaaaaaaaaaaaooaao........',
+        '..oaaaaooaaaaaaaaooaaaaooo.........',
+        '..oaaaaoooaaaaaaooaaaaao...........',
+        '..oaLLLo.oaaaaao.oRRRaao...........',
+        '..ooooooo.ooooo..oooooo............',
+      ] },
+    ],
+  },
+]
+
+// 알 — 원본 도트(파란 지그재그는 Lite Harness 의 빛줄기)
+const EGG = { id: 'egg', name: '빛알', pal: { o: '#2b3448', a: '#f4f6fb', b: '#ffffff', c: '#cfd8ea', d: '#4176e6', g: '#9cc8ff' }, stages: [{ name: '빛알', line: '…두근두근', px: [
+  '.....oooo.....',
+  '...oobbaaoo...',
+  '..obbbaaaaao..',
+  '.obbaaaaaaaco.',
+  '.obaaaaaaaaco.',
+  'obaaaaaaaaaaco',
+  'oaaddaaaddaaco',
+  'oadggdadggdaco',
+  'odaaagdgaaagdo',
+  'oaaaaaagaaaaco',
+  'oaaaaaaaaaacco',
+  '.oaaaaaaaaaco.',
+  '.occaaaaaccco.',
+  '..occcccccco..',
+  '...oooooooo...',
+] }] }
+
+const HATCH = 50_000
+const BASE = [200_000, 800_000, 2_000_000]
+const SPEC = {
+  squirrel: { weight: 60, mult: 1, speed: 52, lines: ['버그 냄새!', '빨리빨리!', '찌릿!'] },
+  sheep: { weight: 30, mult: 1.25, speed: 30, lines: ['음… 5분만…', '커피…', 'Zzz'] },
+  turtle: { weight: 10, mult: 2, speed: 18, lines: ['느긋하게~', '따뜻하다', '괜찮아, 안 터져'] },
+}
+const NATURES = ['급한', '차분한', '느긋한', '호기심 많은', '수줍은']
+const byId = (id) => SPECIES.find((s) => s.id === id)
+const ends = (id) => BASE.map((t) => Math.round(t * SPEC[id].mult))
+
+// ── 앱 통로 (postMessage) ──
+let next = 0
+const waiting = new Map()
+function call(method, params) {
+  const id = ++next
+  parent.postMessage({ litecode: 1, id, method, params }, '*')
+  return new Promise((resolve, reject) => waiting.set(id, { resolve, reject }))
+}
+addEventListener('message', ({ data }) => {
+  const w = data && data.litecode === 1 && waiting.get(data.id)
+  if (!w) return
+  waiting.delete(data.id)
+  data.ok ? w.resolve(data.result) : w.reject(new Error(data.error))
+})
+
+// ── 상태 ──
+const fresh = () => ({ v: 1, baseline: null, feed: 0, species: null, nature: null, seen: [], graduated: [], startedAt: Date.now() })
+let state = fresh()
+let summary = null
+
+function stageOf(s) {
+  if (!s.species) return { stage: -1, from: 0, to: HATCH }
+  const e = ends(s.species)
+  const fed = s.feed - HATCH
+  if (fed < e[0]) return { stage: 0, from: 0, to: e[0] }
+  if (fed < e[1]) return { stage: 1, from: e[0], to: e[1] }
+  return { stage: 2, from: e[1], to: e[2] }
+}
+function pickSpecies() {
+  const total = Object.values(SPEC).reduce((n, s) => n + s.weight, 0)
+  let r = Math.random() * total
+  for (const [id, s] of Object.entries(SPEC)) if ((r -= s.weight) < 0) return id
+  return 'squirrel'
+}
+const markSeen = (id, stage) => { const key = `${id}:${stage}`; if (!state.seen.includes(key)) state.seen.push(key) }
+
+/** 먹이를 주고 부화·진화·졸업을 정한다. 일어난 일을 돌려준다 */
+function feed(amount) {
+  if (amount <= 0) return null
+  const before = stageOf(state)
+  state.feed += amount
+  let event = 'eat'
+  if (!state.species && state.feed >= HATCH) {
+    state.species = pickSpecies()
+    state.nature = NATURES[Math.floor(Math.random() * NATURES.length)]
+    event = 'hatch'
+  }
+  if (state.species) {
+    const e = ends(state.species)
+    if (state.feed - HATCH >= e[2]) {
+      state.graduated.push({ id: state.species, at: Date.now() })
+      markSeen(state.species, 2)
+      state.species = null
+      state.nature = null
+      state.feed = 0
+      return 'graduate'
+    }
+    const now = stageOf(state)
+    markSeen(state.species, now.stage)
+    if (event !== 'hatch' && now.stage > before.stage) event = 'evolve'
+  }
+  return event
+}
+
+async function save() {
+  try { await call('storage.set', { key: 'state', value: state }) } catch { /* 다음에 다시 */ }
+}
+
+async function poll() {
+  if (document.hidden) return
+  try {
+    summary = await call('usage.summary')
+    document.getElementById('error').textContent = ''
+  } catch (error) {
+    document.getElementById('error').textContent = String(error.message).includes('permission') ? '사용량을 읽을 권한이 없습니다 — 확장을 다시 설치해 usage 권한을 허용해 주세요.' : '사용량을 읽지 못했습니다. 잠시 뒤 다시 봅니다.'
+    return render()
+  }
+  const total = summary.total
+  let event = null
+  if (!state.baseline || total.tokens < state.baseline.tokens) state.baseline = { tokens: total.tokens, cacheRead: total.cacheRead } // 처음(또는 장부가 새로 시작) — 지난 것은 먹이로 치지 않는다
+  else {
+    const dTokens = total.tokens - state.baseline.tokens
+    const dCache = Math.max(0, total.cacheRead - state.baseline.cacheRead)
+    state.baseline = { tokens: total.tokens, cacheRead: total.cacheRead }
+    event = feed(Math.max(0, Math.round(dTokens - dCache / 2)))
+  }
+  if (event) {
+    react(event)
+    void save()
+  } else if (!state.savedOnce) { state.savedOnce = true; void save() }
+  render()
+}
+
+// ── 그리기 ──
+function drawSprite(canvas, sp, stage, frame = 0, scale = 4, flip = false) {
+  const rows = sp.stages[stage].px
+  const w = Math.max(...rows.map((r) => r.length)), h = rows.length
+  if (canvas.width !== w * scale || canvas.height !== h * scale) { canvas.width = w * scale; canvas.height = h * scale }
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x]
+      if (ch === '.' || ch === ' ') continue
+      if ((ch === 'L' && frame === 1) || (ch === 'R' && frame === 0)) continue
+      const color = sp.pal[ch]
+      if (!color) continue
+      ctx.fillStyle = color
+      ctx.fillRect((flip ? w - 1 - x : x) * scale, y * scale, scale, scale)
+    }
+  })
+}
+const compact = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(n >= 1e5 ? 0 : 1)}K` : String(n))
+
+/** 지금 몬스터의 그림 · 단계 안 진행(0~1) */
+function current() {
+  const st = stageOf(state)
+  const sp = state.species ? byId(state.species) : EGG
+  const stage = state.species ? st.stage : 0
+  const fed = state.species ? state.feed - HATCH : state.feed
+  const progress = Math.min(1, Math.max(0, (fed - st.from) / (st.to - st.from)))
+  return { sp, stage, progress, st, fed }
+}
+
+/** 몸 크기 — 단계 안에서 60%→100%, 도트라 정수 배율 */
+function scaleFor(progress, field) {
+  const [lo, hi] = field ? [5, 8] : [3, 5]
+  return Math.round(lo + (hi - lo) * progress)
+}
+
+function render() {
+  const { sp, stage, progress, st, fed } = current()
+  const who = document.getElementById('who')
+  const stageName = state.species ? `${stage + 1}단계` : '알'
+  who.innerHTML = ''
+  const b = document.createElement('b'); b.textContent = sp.stages[stage].name; who.appendChild(b)
+  for (const text of [stageName, state.nature ? `${state.nature} 성격` : null, state.species ? `몸 크기 ${Math.round(60 + 40 * progress)}%` : null]) if (text) { const c = document.createElement('span'); c.className = 'chip'; c.textContent = text; who.appendChild(c) }
+  document.getElementById('bar').style.width = `${Math.round(progress * 100)}%`
+  document.getElementById('barLabel').textContent = !state.species ? '부화까지' : stage === 2 ? '졸업까지' : '다음 진화까지'
+  document.getElementById('barValue').textContent = `${Math.round(progress * 100)}% · ${compact(Math.max(0, st.to - fed))} tok 남음`
+  document.getElementById('todayTokens').textContent = summary ? compact(summary.today.tokens) : '—'
+  document.getElementById('todayTurns').textContent = summary ? String(summary.today.turns) : '—'
+  document.getElementById('days').textContent = `${Math.max(1, Math.floor((Date.now() - state.startedAt) / 86_400_000) + 1)}일`
+  const dex = document.getElementById('dex')
+  dex.innerHTML = ''
+  let seen = 0
+  for (const s of SPECIES) s.stages.forEach((stg, i) => {
+    const known = state.seen.includes(`${s.id}:${i}`)
+    if (known) seen++
+    const d = document.createElement('div'); if (!known) d.className = 'unknown'; d.title = known ? stg.name : '???'
+    const c = document.createElement('canvas'); drawSprite(c, s, i, 0, 2); d.appendChild(c); dex.appendChild(d)
+  })
+  document.getElementById('dexTitle').textContent = `도감 ${seen} / ${SPECIES.reduce((n, s) => n + s.stages.length, 0)}${state.graduated.length ? ` · 졸업 ${state.graduated.length}` : ''}`
+  if (hero) hero.refresh()
+}
+
+// ── 걷는 몬스터 ──
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+const stageEl = document.getElementById('stage')
+function walker(get, { vertical = false } = {}) {
+  const el = document.createElement('div'); el.className = 'walker'
+  const cv = document.createElement('canvas'); el.appendChild(cv)
+  const say = document.createElement('div'); say.className = 'say'; el.appendChild(say)
+  stageEl.appendChild(el)
+  const s = { x: 20 + Math.random() * 80, y: 0, tx: 0, ty: 0, wait: 0.5, jump: 0, t: 0, flip: false, frame: 0, talk: 0, key: '' }
+  const ground = () => { const a = stageEl.getBoundingClientRect(); const grassTop = a.height * (document.body.classList.contains('field') ? 0.27 : 0.66); return { a, grassTop } }
+  const draw = () => { const g = get(); drawSprite(cv, g.sp, g.stage, s.frame, g.scale, s.flip) }
+  const pick = () => {
+    const { a, grassTop } = ground()
+    s.tx = Math.random() * Math.max(0, a.width - cv.width)
+    const minY = vertical ? grassTop - cv.height * 0.6 : a.height - cv.height - 14
+    const maxY = a.height - cv.height - 8
+    s.ty = vertical ? minY + Math.random() * Math.max(0, maxY - minY) : Math.max(0, minY)
+  }
+  const talk = (text) => { say.textContent = text; el.classList.add('talk'); s.talk = 2 }
+  el.addEventListener('click', () => { s.jump = 1; const g = get(); talk(g.sp.stages[g.stage].line) })
+  const api = {
+    talk, hop: () => (s.jump = 1),
+    refresh: () => { const g = get(); const key = `${g.sp.id}:${g.stage}:${g.scale}`; if (key !== s.key) { s.key = key; draw(); pick(); s.y = s.ty; s.x = Math.min(s.x, s.tx + 40) } },
+    remove: () => el.remove(),
+    tick: (dt) => {
+      const g = get()
+      s.t += dt
+      if (s.talk > 0 && (s.talk -= dt) <= 0) el.classList.remove('talk')
+      let moving = false
+      const speed = (g.speed ?? 30) * (document.body.classList.contains('field') ? 2 : 1)
+      if (s.wait > 0) s.wait -= dt
+      else {
+        const dx = s.tx - s.x, dy = s.ty - s.y, d = Math.hypot(dx, dy)
+        if (d < 2) { s.wait = 0.8 + Math.random() * 2.6; const r = Math.random(); if (r < 0.25) s.jump = 1; else if (r < 0.5 && g.lines) talk(g.lines[Math.floor(Math.random() * g.lines.length)]); pick() }
+        else { const step = Math.min(d, speed * dt); s.x += (dx / d) * step; s.y += (dy / d) * step; moving = true; if (Math.abs(dx) > 1) s.flip = dx < 0 }
+      }
+      const frame = moving ? Math.floor(s.t * Math.max(3, speed / 9)) % 2 : 0
+      const flipKey = `${frame}:${s.flip}`
+      if (cv.dataset.k !== flipKey) { s.frame = frame; cv.dataset.k = flipKey; draw() }
+      if (s.jump > 0) s.jump = Math.max(0, s.jump - dt * 2.4)
+      const hop = Math.sin(s.jump * Math.PI) * 20
+      el.style.transform = `translate(${s.x}px, ${s.y - hop}px)`
+    },
+  }
+  api.refresh()
+  return api
+}
+
+const heroInfo = () => {
+  const { sp, stage, progress } = current()
+  const field = document.body.classList.contains('field')
+  return { sp, stage, scale: sp === EGG ? (field ? 6 : 4) : scaleFor(progress, field), speed: state.species ? SPEC[state.species].speed : 0, lines: state.species ? SPEC[state.species].lines : ['…두근두근', '따뜻해…'] }
+}
+let hero = null
+let friends = []
+
+function react(event) {
+  if (!hero) return
+  hero.refresh()
+  hero.hop()
+  if (event === 'hatch') hero.talk('태어났다!')
+  else if (event === 'evolve') hero.talk('진화했다!')
+  else if (event === 'graduate') hero.talk('졸업! 새 알이 왔어요')
+  else hero.talk('냠!')
+}
+
+// 전체 화면 — 무대가 창 전체가 되고, 도감에 남긴(본) 친구들이 같이 나온다
+function setField(on) {
+  document.body.classList.toggle('field', on)
+  document.getElementById('full').textContent = on ? '✕' : '⤢'
+  document.getElementById('full').title = on ? '전체 화면 나가기' : '전체 화면'
+  for (const f of friends) f.remove()
+  friends = []
+  if (on) {
+    const others = state.seen.map((key) => key.split(':')).filter(([id, st]) => !(id === state.species && Number(st) === stageOf(state).stage)).slice(-4)
+    for (const [id, st] of others) {
+      const sp = byId(id)
+      friends.push(walker(() => ({ sp, stage: Number(st), scale: 4, speed: SPEC[id].speed, lines: SPEC[id].lines }), { vertical: true }))
+    }
+  }
+  hero.remove()
+  hero = walker(heroInfo, { vertical: on })
+  call('panel.fullscreen', { on }).catch(() => {})
+}
+document.getElementById('full').addEventListener('click', () => setField(!document.body.classList.contains('field')))
+addEventListener('keydown', (e) => e.key === 'Escape' && document.body.classList.contains('field') && setField(false))
+
+// ── 시작 ──
+;(async () => {
+  try {
+    const saved = await call('storage.get', { key: 'state' })
+    if (saved && saved.v === 1) state = { ...fresh(), ...saved }
+  } catch { /* 처음 */ }
+  hero = walker(heroInfo)
+  render()
+  await poll()
+  setInterval(poll, 5000)
+  document.addEventListener('visibilitychange', () => !document.hidden && poll())
+  if (!still) {
+    let last = performance.now()
+    const tick = (now) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; if (!document.hidden) for (const w of [hero, ...friends]) w && w.tick(dt); requestAnimationFrame(tick) }
+    requestAnimationFrame(tick)
+  }
+})()
+</script>
+</body>
+</html>

@@ -26,6 +26,15 @@
       "sha256": "50a8e2e554dff48682fed486348fef83c548cd40ab56551b6d0adf23a2ad211b"
     },
     {
+      "id": "sonarqube",
+      "name": "SonarQube",
+      "description": "이미 돌고 있는 SonarQube 서버(예: Docker)에 주소와 토큰으로 붙어 지금 프로젝트를 분석하고, 품질 게이트·이슈를 봅니다",
+      "version": "0.7.0",
+      "zip": "dist/sonarqube-0.7.0-darwin-arm64.zip",
+      "sha256": "a1663efada94006c0b2cf107584a13ba219f8b71984eab1a1a39864b7b221591",
+      "platform": "darwin-arm64"
+    },
+    {
       "id": "sql-tuning",
       "name": "SQL 튜닝",
       "description": "개발 DB 를 조회만 해서 느린 SQL · MyBatis 매퍼 · JPA 코드의 실행계획을 읽고, 고친 SQL · 힌트 · 인덱스(제안만)를 실측으로 비교해 답합니다",
@@ -40,6 +49,14 @@
       "version": "1.0.0",
       "zip": "dist/tetris-demo-1.0.0.zip",
       "sha256": "76acd4ee041cb12863856e2d495dbaf08a13a576122d40479aa9a4089c42dff3"
+    },
+    {
+      "id": "token-pet",
+      "name": "빛톨 키우기",
+      "description": "AI 에 쓴 토큰만큼 자라는 도트 몬스터",
+      "version": "0.1.0",
+      "zip": "dist/token-pet-0.1.0.zip",
+      "sha256": "1ef8e29c6f36cb539bf151e91a0c0aadaa8075d3fd4161b983b0e20d7da8abd9"
     },
     {
       "id": "vi-pack",
