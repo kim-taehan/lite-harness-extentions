@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코드 지도</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #101216;
+  --surface: #161a20;
+  --surface2: #1b2028;
+  --border: rgba(139,148,158,0.2);
+  --text: #e8eaf0;
+  --sub: rgba(232,234,240,0.6);
+  --faint: rgba(232,234,240,0.4);
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
+  --amber: #f0b429;
+  --red: #e0574f;
+  --green: #4fa892;
+  --blue: #7b93cc;
+  --orange: #c9885c;
+  --purple: #d2a8ff;
+  --pink: #ff7b72;
+  --accent: #7aa2ff;
+  --ai: #7aa2ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 13px/1.5 var(--sans);
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Header */
+.hdr {
+  flex: none; display: flex; align-items: center; gap: 12px;
+  padding: 0 14px; height: 40px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.hdr .logo { font: 700 14px var(--mono); color: var(--amber); letter-spacing: -0.02em; }
+.hdr .sep { width: 1px; height: 18px; background: var(--border); }
+.hdr .title { font-size: 13px; font-weight: 600; }
+.hdr .stats { margin-left: auto; display: flex; gap: 14px; font: 10.5px var(--mono); color: var(--sub); }
+.hdr .stats b { color: var(--text); font-weight: 600; }
+
+/* Toolbar */
+.toolbar {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+  font: 12px var(--sans); cursor: pointer; transition: all 140ms;
+  white-space: nowrap;
+}
+.btn:hover { background: rgba(139,148,158,0.15); border-color: rgba(139,148,158,0.4); }
+.btn.primary { background: rgba(240,180,41,0.14); border-color: rgba(240,180,41,0.55); color: var(--amber); font-weight: 600; }
+.btn.primary:hover { background: rgba(240,180,41,0.26); }
+.btn.ai { border-color: rgba(122,162,255,0.4); color: var(--ai); }
+.btn.ai:hover { background: rgba(122,162,255,0.12); }
+.btn.ai.active { background: rgba(122,162,255,0.2); border-color: var(--ai); }
+.langs { display: flex; gap: 4px; margin-left: 10px; }
+.lang { font: 600 10px var(--mono); padding: 2px 7px; border-radius: 10px; }
+.lang.ts { background: rgba(49,120,198,0.24); color: #6bb3f0; }
+
+/* Main */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* Left panel */
+.left {
+  width: 236px; flex: none;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; background: var(--surface);
+}
+.plabel {
+  font: 600 10px var(--sans); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--sub); padding: 11px 12px 7px;
+}
+.ring { padding: 0 12px 9px; border-bottom: 1px solid var(--border); }
+.ring:last-child { border-bottom: none; }
+.ring-head {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 0 5px;
+  font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.07em;
+}
+.rdot { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+.ring-domain .rdot    { background: var(--green); }
+.ring-application .rdot{ background: var(--blue); }
+.ring-adapter .rdot    { background: var(--orange); }
+.rn { font-size: 10px; opacity: 0.5; font-weight: 400; }
+.rfiles { display: flex; flex-wrap: wrap; gap: 3px; padding-left: 14px; }
+.fc {
+  font: 10px var(--mono); padding: 1.5px 6px; border-radius: 3px;
+  background: rgba(128,128,128,0.08); border: 1px solid var(--border);
+  color: var(--sub); cursor: pointer; transition: all 120ms;
+}
+.fc:hover { background: rgba(139,148,158,0.2); color: var(--text); }
+.fc.hot  { background: rgba(240,180,41,0.18); border-color: rgba(240,180,41,0.5); color: var(--amber); }
+.cfg {
+  margin-top: auto; padding: 12px;
+  border-top: 1px solid var(--border);
+}
+.cfg h4 { font: 600 10px var(--sans); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--sub); margin-bottom: 9px; }
+.cfg-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; font-size: 11px; }
+.cfg-row label { flex: none; width: 54px; color: var(--sub); font: 10.5px var(--mono); }
+.cfg-row select {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text); padding: 3px 7px; font: 11px var(--mono);
+  min-width: 0;
+}
+
+/* Center */
+.center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Focused file header */
+.fhead {
+  flex: none; padding: 12px 16px 9px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.fhead .path { font: 600 14px var(--mono); overflow-wrap: anywhere; }
+.fhead .path .dir { opacity: 0.5; }
+.fhead .meta { display: flex; gap: 13px; margin-top: 4px; font: 11px var(--mono); color: var(--sub); flex-wrap: wrap; }
+.brow { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-top: 9px; }
+.blast-n { font: 700 26px/1 var(--mono); color: var(--amber); font-variant-numeric: tabular-nums; }
+.blast-sub { font: 10.5px var(--mono); color: var(--sub); }
+.bbar { height: 4px; border-radius: 2px; background: rgba(139,148,158,0.18); overflow: hidden; margin-top: 7px; }
+.bbar>i { display: block; height: 4px; background: var(--amber); border-radius: 2px; }
+.hchips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.hchip {
+  font: 10.5px var(--mono); padding: 1.5px 8px; border-radius: 20px;
+  border: 1px solid rgba(240,180,41,0.4); color: var(--amber); opacity: 0.88;
+}
+
+/* Center body: 2 columns */
+.center-body { flex: 1; display: flex; overflow: hidden; }
+.center-left { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.center-right {
+  width: 218px; flex: none;
+  border-left: 1px solid var(--border);
+  overflow-y: auto; background: var(--surface);
+}
+
+/* Graph scroll area */
+.gscroll { flex: 1; overflow: auto; padding: 14px 16px; }
+
+/* Ripple */
+.rsec { margin-bottom: 16px; }
+.rsec-title { font: 600 9.5px var(--sans); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 8px; }
+.rsvg { width: 100%; max-width: 480px; display: block; }
+
+/* Cross-section */
+.xsec { margin-top: 4px; }
+.band { border-left: 2px solid rgba(139,148,158,0.35); padding-left: 11px; margin-bottom: 12px; }
+.band-domain    { border-left-color: var(--green); }
+.band-application { border-left-color: var(--blue); }
+.band-adapter    { border-left-color: var(--orange); }
+.bhead {
+  display: flex; align-items: baseline; gap: 7px;
+  font: 600 10px var(--mono); text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 6px; opacity: 0.75;
+}
+.bn { font-size: 10px; opacity: 0.5; font-weight: 400; }
+.cells { display: flex; flex-wrap: wrap; gap: 4px; }
+.cell {
+  font: 10px var(--mono); padding: 2.5px 7px; border-radius: 4px;
+  background: rgba(128,128,128,0.08); border: 1px solid rgba(139,148,158,0.22);
+  color: var(--text); cursor: pointer; white-space: nowrap; opacity: 0.55;
+  transition: all 120ms;
+}
+.cell:hover { opacity: 1; background: rgba(139,148,158,0.2); }
+.cell.sel { background: var(--amber); border-color: var(--amber); color: #17120a; font-weight: 700; opacity: 1; }
+.cell.h1 { background: rgba(240,180,41,0.30); border-color: rgba(240,180,41,0.78); opacity: 1; }
+.cell.h2 { background: rgba(240,180,41,0.19); border-color: rgba(240,180,41,0.52); opacity: 1; }
+.cell.h3 { background: rgba(240,180,41,0.12); border-color: rgba(240,180,41,0.36); opacity: 0.94; }
+.cell.h4 { background: rgba(240,180,41,0.07); border-color: rgba(240,180,41,0.24); opacity: 0.86; }
+
+/* Detail */
+.dtl { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.dsec { margin-bottom: 12px; }
+.dhead { font: 600 10px var(--sans); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--sub); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.drows { display: flex; flex-direction: column; gap: 6px; }
+.drow { display: flex; gap: 10px; align-items: baseline; }
+.drow-label { flex: none; width: 72px; font: 10.5px var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+.refs { display: flex; flex-wrap: wrap; gap: 3px; }
+.ref {
+  font: 10.5px var(--mono); padding: 1.5px 7px; border-radius: 4px;
+  background: rgba(128,128,128,0.1); border: 1px solid var(--border);
+  cursor: pointer; white-space: nowrap; transition: all 120ms;
+}
+.ref:hover { background: rgba(139,148,158,0.24); }
+
+/* Violation */
+.viol-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-left: 8px; flex-wrap: wrap; }
+.viol-ref { font: 10.5px var(--mono); padding: 1.5px 7px; border-radius: 4px;
+  background: rgba(224,87,79,0.12); border: 1px solid rgba(224,87,79,0.55);
+  color: var(--red); cursor: pointer; }
+.viol-arrow { color: var(--red); opacity: 0.6; font-size: 11px; }
+.viol-tag { font: 9.5px var(--mono); opacity: 0.6; color: var(--sub); }
+
+/* AI buttons — attached to violations & file header */
+.ai-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font: 11px var(--sans); padding: 2px 9px; border-radius: 12px;
+  border: 1px solid rgba(122,162,255,0.4); color: var(--ai);
+  background: transparent; cursor: pointer; transition: all 120ms;
+}
+.ai-btn:hover { background: rgba(122,162,255,0.15); }
+.ai-btn .ic { font-size: 10px; }
+
+/* AI context bar — appears at bottom of center-left when user selects "ask AI" */
+.ai-bar {
+  flex: none; display: none; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(122,162,255,0.3);
+  background: rgba(122,162,255,0.06);
+}
+.ai-bar.show { display: flex; }
+.ai-bar .ai-icon { color: var(--ai); font-size: 15px; flex: none; }
+.ai-bar .ai-prompt {
+  flex: 1; min-width: 0; font: 11.5px var(--mono); color: var(--text);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ai-bar .ai-prompt:focus { outline: none; border-color: rgba(122,162,255,0.5); }
+.ai-send {
+  flex: none; font: 600 11.5px var(--sans);
+  padding: 4px 13px; border-radius: 6px;
+  border: none; background: var(--ai); color: #0d0f14; cursor: pointer;
+}
+.ai-send:hover { filter: brightness(1.15); }
+.ai-cancel {
+  flex: none; font: 11.5px var(--sans);
+  padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent; color: var(--sub); cursor: pointer;
+}
+.ai-cancel:hover { background: rgba(139,148,158,0.12); }
+
+/* Symbols (center-right) */
+.syms-label { font: 600 10px var(--sans); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--sub); padding: 11px 12px 8px; display: flex; justify-content: space-between; }
+.syms-label .n { opacity: 0.5; margin-left: 6px; }
+.slist { display: flex; flex-direction: column; gap: 4px; padding: 0 10px 14px; }
+.srow {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; border-radius: 5px;
+  background: rgba(128,128,128,0.07); border: 1px solid var(--border);
+  cursor: pointer; transition: all 120ms;
+  font: 11.5px var(--mono); min-width: 0;
+}
+.srow:hover { background: rgba(139,148,158,0.18); border-color: rgba(139,148,158,0.35); }
+.sk { flex: none; font: 700 9px var(--mono); padding: 1px 5px; border-radius: 3px; min-width: 28px; text-align: center; }
+.sk-c  { background: rgba(210,168,255,0.2); color: var(--purple); }
+.sk-f  { background: rgba(255,123,114,0.18); color: var(--pink); }
+.sk-ctor{ background: rgba(240,180,41,0.2); color: var(--amber); }
+.sk-v  { background: rgba(123,147,204,0.2); color: var(--blue); }
+.sn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sp { font-size: 10px; color: var(--faint); }
+.sln { font-size: 10px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* Call Graph (right panel level 2) */
+.cg { padding: 8px 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.cg-fn {
+  background: rgba(128,128,128,0.06); border: 1px solid var(--border);
+  border-radius: 5px; padding: 6px 8px; cursor: pointer; transition: all 120ms;
+}
+.cg-fn:hover { background: rgba(139,148,158,0.14); border-color: rgba(139,148,158,0.35); }
+.cg-fn.sel { background: rgba(122,162,255,0.1); border-color: rgba(122,162,255,0.45); }
+.cg-fn-name { font: 600 11.5px var(--mono); margin-bottom: 3px; }
+.cg-line { color: var(--faint); font-weight: 400; font-size: 10px; }
+.cg-calls { display: flex; flex-direction: column; gap: 2px; padding-left: 8px; }
+.cg-target {
+  font: 10.5px var(--mono); color: var(--sub);
+  display: flex; align-items: center; gap: 4px;
+}
+.cg-target::before { content: '→'; color: var(--faint); font-size: 10px; }
+.cg-target:hover { color: var(--ai); }
+.cg-target.viol { color: var(--red); }
+
+/* Symbol detail (right panel level 3) */
+.dg-row { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; padding: 2px 0; }
+.dg-from { color: var(--faint); width: 12px; flex: none; }
+.dg-file { color: var(--faint); font-size: 10px; margin-left: auto; font-family: var(--mono); }
+
+/* Circular dependencies */
+.circ-row { font: 11px var(--mono); padding: 4px 0 4px 8px; opacity: 0.9; }
+.circ-path { white-space: nowrap; }
+
+/* AI context preview — modal-like overlay */
+.ai-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.5);
+  align-items: center; justify-content: center;
+}
+.ai-overlay.show { display: flex; }
+.ai-modal {
+  width: 520px; max-width: 92vw; max-height: 80vh;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; display: flex; flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+}
+.ai-modal-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.ai-modal-head .ic { color: var(--ai); font-size: 16px; }
+.ai-modal-head .t { font: 600 13px var(--sans); }
+.ai-modal-head .close {
+  margin-left: auto; font: 13px var(--sans); color: var(--sub);
+  background: none; border: none; cursor: pointer; padding: 2px 6px;
+}
+.ai-modal-head .close:hover { color: var(--text); }
+.ai-modal-body {
+  padding: 14px 16px; overflow-y: auto; flex: 1;
+  font: 12px/1.6 var(--mono); color: var(--sub);
+  white-space: pre-wrap; word-break: break-word;
+}
+.ai-modal-body .ctx-label {
+  display: block; font: 600 10px var(--sans); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint); margin: 10px 0 4px;
+}
+.ai-modal-body .ctx-label:first-child { margin-top: 0; }
+.ai-modal-body .file-path { color: var(--amber); }
+.ai-modal-body .layer-tag { color: var(--green); }
+.ai-modal-body .violation { color: var(--red); }
+.ai-modal-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-top: 1px solid var(--border);
+}
+.ai-modal-foot .hint { font: 10.5px var(--sans); color: var(--faint); flex: 1; }
+.ai-modal-foot .send-btn {
+  font: 600 12px var(--sans);
+  padding: 5px 16px; border-radius: 6px;
+  border: none; background: var(--ai); color: #0d0f14; cursor: pointer;
+}
+.ai-modal-foot .send-btn:hover { filter: brightness(1.15); }
+
+/* Status bar */
+.status {
+  flex: none; display: flex; align-items: center; gap: 14px;
+  padding: 0 14px; height: 27px;
+  border-top: 1px solid var(--border); background: var(--surface);
+  font: 10.5px var(--mono); color: var(--sub);
+}
+.ok { color: var(--green); }
+.warn { color: var(--amber); }
+.status .sp { margin-left: auto; }
+
+/* Toast feedback */
+.toast {
+  position: fixed; bottom: 44px; right: 20px; z-index: 200;
+  padding: 8px 16px; border-radius: 8px;
+  background: rgba(122,162,255,0.15); border: 1px solid rgba(122,162,255,0.4);
+  color: var(--ai); font: 12px var(--sans);
+  opacity: 0; transform: translateY(8px); transition: all 250ms;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="hdr">
+    <span class="logo">code-map</span>
+    <span class="sep"></span>
+    <span class="title">litecode</span>
+    <div class="stats">
+      <span>파일 <b>353</b></span>
+      <span>심볼 <b>1,247</b></span>
+      <span>간선 <b>892</b></span>
+      <span>읽음 <b>2.8s</b></span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn primary">⟳ 지도 만들기</button>
+    <button class="btn">⇕ 내보내기</button>
+    <button class="btn">⚙ 규칙</button>
+    <button class="btn ai" id="ai-mode-btn" title="코어 어시스턴트와 연결">✦ 어시스턴트</button>
+    <div class="langs">
+      <span class="lang ts">TypeScript</span>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- LEFT: Layer rings -->
+    <div class="left">
+      <div class="plabel">층 — 헥사고날 아키텍처</div>
+
+      <div class="ring ring-adapter">
+        <div class="ring-head">
+          <span class="rdot"></span><span>adapter</span>
+          <span class="rn">12</span>
+        </div>
+        <div class="rfiles">
+          <span class="fc">main</span>
+          <span class="fc">extensionsHost</span>
+          <span class="fc">keyStorage</span>
+          <span class="fc">speechHost</span>
+          <span class="fc">attachmentsHost</span>
+          <span class="fc">notificationHost</span>
+          <span class="fc">openInHost</span>
+          <span class="fc">reportHost</span>
+          <span class="fc">resilience</span>
+          <span class="fc">windowBounds</span>
+          <span class="fc">extensionFetch</span>
+          <span class="fc">speechWorker</span>
+        </div>
+      </div>
+
+      <div class="ring ring-application">
+        <div class="ring-head">
+          <span class="rdot"></span><span>application</span>
+          <span class="rn">58</span>
+        </div>
+        <div class="rfiles">
+          <span class="fc hot">App</span>
+          <span class="fc hot">ChatTurn</span>
+          <span class="fc hot">Composer</span>
+          <span class="fc">ConversationView</span>
+          <span class="fc">Settings</span>
+          <span class="fc">Sidebar</span>
+          <span class="fc">GitLog</span>
+          <span class="fc">FilePreview</span>
+          <span class="fc">chatState</span>
+          <span class="fc">filePreviewStore</span>
+          <span class="fc">gitStore</span>
+          <span class="fc">settingsStore</span>
+          <span class="fc">featuresStore</span>
+          <span class="fc">extensionsStore</span>
+          <span class="fc">Notices</span>
+          <span class="fc">VoiceInput</span>
+          <span class="fc">TerminalView</span>
+          <span class="fc">TaskTab</span>
+          <span class="fc">Make</span>
+          <span class="fc">Report</span>
+        </div>
+      </div>
+
+      <div class="ring ring-domain">
+        <div class="ring-head">
+          <span class="rdot"></span><span>domain</span>
+          <span class="rn">283</span>
+        </div>
+        <div class="rfiles">
+          <span class="fc hot">engine</span>
+          <span class="fc hot">chat</span>
+          <span class="fc hot">llm</span>
+          <span class="fc">projects</span>
+          <span class="fc">mcp</span>
+          <span class="fc">git</span>
+          <span class="fc">settings</span>
+          <span class="fc">backgroundTasks</span>
+          <span class="fc">extensions svc</span>
+          <span class="fc">speech</span>
+          <span class="fc">browser</span>
+          <span class="fc">slash / bang / at</span>
+          <span class="fc">contract</span>
+          <span class="fc">ipc</span>
+          <span class="fc">modes</span>
+          <span class="fc">engineModelId</span>
+          <span class="fc">shared/*.ts</span>
+          <span class="fc">i18n</span>
+        </div>
+      </div>
+
+      <div class="cfg">
+        <h4>아키텍처 규칙</h4>
+        <div class="cfg-row">
+          <label>모드</label>
+          <select>
+            <option selected>헥사고날</option>
+            <option>레이어드</option>
+            <option style="color:var(--faint)">커스텀 (JSON)</option>
+          </select>
+        </div>
+        <div class="cfg-row">
+          <label>내부</label>
+          <select><option>domain (src/services, src/triggers, shared)</option></select>
+        </div>
+        <div class="cfg-row">
+          <label>외부</label>
+          <select><option>adapter (electron)</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+      <!-- File header -->
+      <div class="fhead">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="path"><span class="dir">src/services/</span>chat.ts</div>
+          <button class="ai-btn" data-ai="file" title="이 파일 구조를 어시스턴트에게 질문">✦ 질문</button>
+          <button class="ai-btn" data-ai="blast" title="영향 범위를 어시스턴트에게 분석">✦ 영향 분석</button>
+        </div>
+        <div class="meta">
+          <span>312줄</span>
+          <span>들어옴 <b>14</b></span>
+          <span>나감 <b>11</b></span>
+          <span>층: <b style="color:var(--green)">domain</b></span>
+        </div>
+        <div class="brow">
+          <span class="blast-n">67</span>
+          <span class="blast-sub">/ 353개 파일에 닿습니다 · 19%</span>
+        </div>
+        <div class="bbar"><i style="width:19%"></i></div>
+        <div class="hchips">
+          <span class="hchip">1촌 8</span>
+          <span class="hchip">2촌 15</span>
+          <span class="hchip">3촌 22</span>
+          <span class="hchip">4촌+ 22</span>
+        </div>
+      </div>
+
+      <!-- 2-column body -->
+      <div class="center-body">
+        <div class="center-left">
+          <div class="gscroll">
+
+            <!-- Ripple -->
+            <div class="rsec">
+              <div class="rsec-title">영향 반경 — chat.ts</div>
+              <svg class="rsvg" viewBox="0 0 560 250" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="280" cy="125" r="22" fill="none" stroke="#f0b429" stroke-width="2.2"/>
+                <text x="280" y="129" text-anchor="middle" fill="#f0b429" font-size="10" font-weight="700">chat</text>
+
+                <circle cx="280" cy="125" r="58" fill="none" stroke="rgba(240,180,41,0.42)" stroke-width="1" stroke-dasharray="4 3"/>
+                <g><circle cx="280" cy="67" r="12" fill="none" stroke="rgba(240,180,41,0.75)" stroke-width="1.5"/><text x="280" y="70" text-anchor="middle" fill="rgba(240,180,41,0.9)" font-size="8">engine</text></g>
+                <g><circle cx="345" cy="96" r="12" fill="none" stroke="rgba(240,180,41,0.75)" stroke-width="1.5"/><text x="345" y="99" text-anchor="middle" fill="rgba(240,180,41,0.9)" font-size="8">sendQueue</text></g>
+                <g><circle cx="345" cy="154" r="12" fill="none" stroke="rgba(240,180,41,0.75)" stroke-width="1.5"/><text x="345" y="157" text-anchor="middle" fill="rgba(240,180,41,0.9)" font-size="8">bgTasks</text></g>
+                <g><circle cx="280" cy="183" r="12" fill="none" stroke="rgba(240,180,41,0.75)" stroke-width="1.5"/><text x="280" y="186" text-anchor="middle" fill="rgba(240,180,41,0.9)" font-size="8">chatReducer</text></g>
+                <g><circle cx="215" cy="154" r="12" fill="none" stroke="rgba(240,180,41,0.75)" stroke-width="1.5"/><text x="215" y="157" text-anchor="middle" fill="rgba(240,180,41,0.9)" font-size="8">llm</text></g>
+                <g><circle cx="215" cy="96" r="12" fill="none" stroke="rgba(240,180,41,0.75)" stroke-width="1.5"/><text x="215" y="99" text-anchor="middle" fill="rgba(240,180,41,0.9)" font-size="8">attach</text></g>
+
+                <circle cx="280" cy="125" r="105" fill="none" stroke="rgba(240,180,41,0.22)" stroke-width="1" stroke-dasharray="3 4"/>
+                <g><circle cx="130" cy="55" r="10" fill="none" stroke="rgba(240,180,41,0.44)" stroke-width="1.2"/><text x="130" y="58" text-anchor="middle" fill="rgba(240,180,41,0.62)" font-size="7">App</text></g>
+                <g><circle cx="430" cy="55" r="10" fill="none" stroke="rgba(240,180,41,0.44)" stroke-width="1.2"/><text x="430" y="58" text-anchor="middle" fill="rgba(240,180,41,0.62)" font-size="7">chatState</text></g>
+                <g><circle cx="470" cy="125" r="10" fill="none" stroke="rgba(240,180,41,0.44)" stroke-width="1.2"/><text x="470" y="128" text-anchor="middle" fill="rgba(240,180,41,0.62)" font-size="7">ConversationView</text></g>
+                <g><circle cx="430" cy="195" r="10" fill="none" stroke="rgba(240,180,41,0.44)" stroke-width="1.2"/><text x="430" y="198" text-anchor="middle" fill="rgba(240,180,41,0.62)" font-size="7">Composer</text></g>
+                <g><circle cx="280" cy="232" r="10" fill="none" stroke="rgba(240,180,41,0.44)" stroke-width="1.2"/><text x="280" y="235" text-anchor="middle" fill="rgba(240,180,41,0.62)" font-size="7">Sidebar</text></g>
+                <g><circle cx="130" cy="195" r="10" fill="none" stroke="rgba(240,180,41,0.44)" stroke-width="1.2"/><text x="130" y="198" text-anchor="middle" fill="rgba(240,180,41,0.62)" font-size="7">Notices</text></g>
+
+                <circle cx="280" cy="125" r="152" fill="none" stroke="rgba(240,180,41,0.13)" stroke-width="1" stroke-dasharray="2 5"/>
+                <g><circle cx="40" cy="90" r="9" fill="none" stroke="rgba(240,180,41,0.28)" stroke-width="1"/><text x="40" y="93" text-anchor="middle" fill="rgba(240,180,41,0.45)" font-size="6.5">Settings</text></g>
+                <g><circle cx="520" cy="170" r="9" fill="none" stroke="rgba(240,180,41,0.28)" stroke-width="1"/><text x="520" y="173" text-anchor="middle" fill="rgba(240,180,41,0.45)" font-size="6.5">VoiceInput</text></g>
+
+                <line x1="280" y1="67" x2="280" y2="125" stroke="rgba(240,180,41,0.28)" stroke-width="0.8"/>
+                <line x1="345" y1="96" x2="280" y2="125" stroke="rgba(240,180,41,0.28)" stroke-width="0.8"/>
+                <line x1="345" y1="154" x2="280" y2="125" stroke="rgba(240,180,41,0.28)" stroke-width="0.8"/>
+                <line x1="280" y1="183" x2="280" y2="125" stroke="rgba(240,180,41,0.28)" stroke-width="0.8"/>
+                <line x1="215" y1="154" x2="280" y2="125" stroke="rgba(240,180,41,0.28)" stroke-width="0.8"/>
+                <line x1="215" y1="96" x2="280" y2="125" stroke="rgba(240,180,41,0.28)" stroke-width="0.8"/>
+              </svg>
+            </div>
+
+            <!-- Cross-section -->
+            <div class="xsec">
+              <div class="rsec-title">층 단면도 — 의존은 아래(안쪽)로만 흘러야 합니다</div>
+
+              <div class="band band-adapter">
+                <div class="bhead"><span>adapter</span><span class="bn">12</span></div>
+                <div class="cells">
+                  <span class="cell">main</span>
+                  <span class="cell">extensionsHost</span>
+                  <span class="cell">keyStorage</span>
+                  <span class="cell">speechHost</span>
+                  <span class="cell">attachmentsHost</span>
+                  <span class="cell">notificationHost</span>
+                  <span class="cell">openInHost</span>
+                  <span class="cell">reportHost</span>
+                  <span class="cell">resilience</span>
+                </div>
+              </div>
+
+              <div class="band band-application">
+                <div class="bhead"><span>application</span><span class="bn">58</span></div>
+                <div class="cells">
+                  <span class="cell h2">App</span>
+                  <span class="cell h2">ChatTurn</span>
+                  <span class="cell h2">Composer</span>
+                  <span class="cell h2">ConversationView</span>
+                  <span class="cell h3">Settings</span>
+                  <span class="cell h3">Sidebar</span>
+                  <span class="cell h3">GitLog</span>
+                  <span class="cell h3">FilePreview</span>
+                  <span class="cell h3">chatState</span>
+                  <span class="cell h3">filePreviewStore</span>
+                  <span class="cell h4">Notices</span>
+                  <span class="cell h4">VoiceInput</span>
+                  <span class="cell h4">TerminalView</span>
+                  <span class="cell h4">TaskTab</span>
+                  <span class="cell h4">Report</span>
+                </div>
+              </div>
+
+              <div class="band band-domain">
+                <div class="bhead"><span>domain</span><span class="bn">283</span></div>
+                <div class="cells">
+                  <span class="cell sel">chat</span>
+                  <span class="cell h1">engine</span>
+                  <span class="cell h1">llm</span>
+                  <span class="cell h1">sendQueue</span>
+                  <span class="cell h1">bgTasks</span>
+                  <span class="cell h1">contract</span>
+                  <span class="cell h2">projects</span>
+                  <span class="cell h2">mcp</span>
+                  <span class="cell h2">git</span>
+                  <span class="cell h2">settings</span>
+                  <span class="cell h2">speech</span>
+                  <span class="cell h2">browser</span>
+                  <span class="cell h3">ipc</span>
+                  <span class="cell h3">modes</span>
+                  <span class="cell h3">engineModelId</span>
+                  <span class="cell h3">slash</span>
+                  <span class="cell h3">bang</span>
+                  <span class="cell h3">at</span>
+                  <span class="cell h4">i18n</span>
+                  <span class="cell h4">tasks</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detail -->
+            <div class="dtl">
+              <div class="dsec">
+                <div class="dhead">이 파일을 고치면 닿는 것 <span style="color:var(--amber);font-weight:700;font-family:var(--mono);margin-left:4px">67</span></div>
+                <div class="drows">
+                  <div class="drow">
+                    <span class="drow-label">1촌 8</span>
+                    <div class="refs">
+                      <span class="ref">engine</span>
+                      <span class="ref">llm</span>
+                      <span class="ref">sendQueue</span>
+                      <span class="ref">bgTasks</span>
+                      <span class="ref">attachments</span>
+                      <span class="ref">chatReducer</span>
+                      <span class="ref">contract</span>
+                      <span class="ref">usage</span>
+                    </div>
+                  </div>
+                  <div class="drow">
+                    <span class="drow-label">2촌 15</span>
+                    <div class="refs">
+                      <span class="ref">App</span>
+                      <span class="ref">ChatTurn</span>
+                      <span class="ref">Composer</span>
+                      <span class="ref">ConversationView</span>
+                      <span class="ref">chatState</span>
+                      <span class="ref">Sidebar</span>
+                      <span class="ref">Notices</span>
+                      <span class="ref">FilePreview</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dsec">
+                <div class="dhead" style="color:var(--sub)">이 파일이 쓰는 것</div>
+                <div class="drows">
+                  <div class="drow">
+                    <span class="drow-label">11개</span>
+                    <div class="refs">
+                      <span class="ref">engineModelId</span>
+                      <span class="ref">llm</span>
+                      <span class="ref">attachments</span>
+                      <span class="ref">sendQueue</span>
+                      <span class="ref">backgroundTasks</span>
+                      <span class="ref">i18n</span>
+                      <span class="ref">modes</span>
+                      <span class="ref">usage</span>
+                      <span class="ref">chatReducer</span>
+                      <span class="ref">contract</span>
+                      <span class="ref">chat shared</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Circular dependencies (from madge) -->
+              <div class="dsec">
+                <div class="dhead">
+                  <span style="color:var(--amber);font-size:11px">⟳</span>
+                  <span>순환 의존 <b style="font-family:var(--mono);font-weight:700">2건</b></span>
+                  <button class="ai-btn" data-ai="circular" style="margin-left:auto" title="순환 해소 방법을 어시스턴트에게 질문">✦ 해소 방법</button>
+                </div>
+                <div class="circ-row">
+                  <span class="circ-path">llm.ts <span class="viol-arrow">→</span> follow.ts <span class="viol-arrow">→</span> history.ts <span class="viol-arrow">→</span> <b style="color:var(--amber)">llm.ts</b></span>
+                </div>
+                <div class="circ-row">
+                  <span class="circ-path">llm.ts <span class="viol-arrow">→</span> service.ts <span class="viol-arrow">→</span> migrate.ts <span class="viol-arrow">→</span> <b style="color:var(--amber)">llm.ts</b></span>
+                </div>
+              </div>
+
+              <!-- Violations with AI button -->
+              <div class="dsec">
+                <div class="dhead">
+                  <span style="color:var(--red);font-size:11px">▲</span>
+                  <span>층 위반 <b style="font-family:var(--mono);font-weight:700">1건</b></span> — 안쪽이 바깥을 씁니다
+                  <button class="ai-btn" data-ai="violation" style="margin-left:auto" title="이 위반을 어시스턴트에게 수정 요청">✦ 수정 요청</button>
+                </div>
+                <div class="viol-row">
+                  <span class="viol-ref">chat.ts</span>
+                  <span class="viol-tag">domain</span>
+                  <span class="viol-arrow">→</span>
+                  <span class="viol-ref">attachmentsHost</span>
+                  <span class="viol-tag">adapter</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /gscroll -->
+
+          <!-- AI context bar (appears when AI mode active) -->
+          <div class="ai-bar" id="ai-bar">
+            <span class="ai-icon">✦</span>
+            <input class="ai-prompt" id="ai-input" type="text"
+              placeholder="코어 어시스턴트에 물어볼 내용…"
+              value="chat.ts 의 attachmentsHost 의존을 어떻게 해소할 수 있을까?">
+            <button class="ai-send" id="ai-send">전송</button>
+            <button class="ai-cancel" id="ai-cancel">✕</button>
+          </div>
+
+        </div><!-- /center-left -->
+
+        <!-- RIGHT: 3-level detail (symbols / call graph / signatures) -->
+        <div class="center-right">
+
+          <!-- Level 2: Call Graph -->
+          <div id="cg-panel">
+            <div class="rp-head" style="display:flex;align-items:center;gap:6px;padding:11px 12px 8px;border-bottom:1px solid var(--border)">
+              <span class="rp-title" style="font:600 10px var(--sans);letter-spacing:0.09em;text-transform:uppercase;color:var(--sub);flex:1">call graph</span>
+              <button class="ai-btn" data-ai="callgraph" style="font-size:10px;padding:1px 7px">✦</button>
+            </div>
+            <div class="cg" id="cg-body">
+              <div class="cg-fn sel" data-fn="send">
+                <div class="cg-fn-name">send <span class="cg-line">:54</span></div>
+                <div class="cg-calls">
+                  <span class="cg-target" data-to="llm">llm.stream</span>
+                  <span class="cg-target" data-to="engine">engine.run</span>
+                  <span class="cg-target" data-to="sendQueue">sendQueue.push</span>
+                  <span class="cg-target" data-to="bgTasks">bgTasks.check</span>
+                </div>
+              </div>
+              <div class="cg-fn" data-fn="interject">
+                <div class="cg-fn-name">interject <span class="cg-line">:78</span></div>
+                <div class="cg-calls">
+                  <span class="cg-target" data-to="llm">llm.stream</span>
+                </div>
+              </div>
+              <div class="cg-fn" data-fn="stopTurn">
+                <div class="cg-fn-name">stopTurn <span class="cg-line">:95</span></div>
+                <div class="cg-calls">
+                  <span class="cg-target" data-to="engine">engine.abort</span>
+                </div>
+              </div>
+              <div class="cg-fn" data-fn="compact">
+                <div class="cg-fn-name">compact <span class="cg-line">:112</span></div>
+                <div class="cg-calls">
+                  <span class="cg-target" data-to="llm">llm.compress</span>
+                  <span class="cg-target" data-to="chatReducer">reduce</span>
+                </div>
+              </div>
+              <div class="cg-fn" data-fn="enqueue">
+                <div class="cg-fn-name">enqueue <span class="cg-line">:134</span></div>
+                <div class="cg-calls">
+                  <span class="cg-target" data-to="sendQueue">sendQueue.add</span>
+                  <span class="cg-target" data-to="bgTasks">bgTasks.enqueue</span>
+                </div>
+              </div>
+              <div class="cg-fn" data-fn="onTurnComplete">
+                <div class="cg-fn-name">onTurnComplete <span class="cg-line">:158</span></div>
+                <div class="cg-calls">
+                  <span class="cg-target" data-to="chatReducer">reducer</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 3: Symbol Detail -->
+          <div id="sym-detail-panel" style="display:none">
+            <div class="rp-head" style="display:flex;align-items:center;gap:6px;padding:11px 12px 8px;border-bottom:1px solid var(--border)">
+              <span class="rp-title" style="font:600 10px var(--sans);letter-spacing:0.09em;text-transform:uppercase;color:var(--sub);flex:1">send — 상세</span>
+              <button class="rp-close" style="font:11px var(--sans);color:var(--sub);background:none;border:none;cursor:pointer" id="sym-detail-close">✕</button>
+            </div>
+            <div style="padding:10px 12px;font:12px/1.7 var(--mono);color:var(--text)">
+              <div style="color:var(--faint);margin-bottom:4px">시그니처</div>
+              <code style="display:block;padding:6px 8px;background:var(--bg);border-radius:5px;font-size:11.5px;overflow-x:auto">
+<span style="color:var(--purple)">async</span> <span style="color:var(--pink)">function</span> <span style="color:var(--amber)">send</span>(
+  msg: <span style="color:var(--red)">string</span>,
+  opts?: <span style="color:var(--blue)">SendOpts</span>
+): <span style="color:var(--blue)">Promise</span>&lt;<span style="color:var(--green)">void</span>&gt;
+              </code>
+              <div style="color:var(--faint);margin:10px 0 4px">호출 4곳</div>
+              <div class="dg-row"><span class="dg-from">→</span> llm.stream <span class="dg-file">llm.ts</span></div>
+              <div class="dg-row"><span class="dg-from">→</span> engine.run <span class="dg-file">engine.ts</span></div>
+              <div class="dg-row"><span class="dg-from">→</span> sendQueue.push <span class="dg-file">sendQueue.ts</span></div>
+              <div class="dg-row"><span class="dg-from">→</span> bgTasks.check <span class="dg-file">bgTasks.ts</span></div>
+            </div>
+          </div>
+
+          <!-- Level 1: Symbol List (default) -->
+          <div id="sym-list-panel">
+            <div class="rp-head" style="display:flex;align-items:center;gap:6px;padding:11px 12px 8px;border-bottom:1px solid var(--border)">
+              <span class="rp-title" style="font:600 10px var(--sans);letter-spacing:0.09em;text-transform:uppercase;color:var(--sub);flex:1">chat.ts 심볼</span>
+              <button class="ai-btn" data-ai="symbol" style="font-size:10px;padding:1px 7px" title="선택한 심볼로 질문">✦</button>
+            </div>
+            <div class="slist">
+              <div class="srow" data-sym="ChatSession:18"><span class="sk sk-c">C</span><span class="sn">ChatSession</span><span class="sln">18</span></div>
+              <div class="srow" data-sym="new ChatSession:28"><span class="sk sk-ctor">new</span><span class="sn">ChatSession</span><span class="sln">28</span></div>
+              <div class="srow" data-sym="send:54"><span class="sk sk-f">fn</span><span class="sn">send</span><span class="sp">(msg,opts?)</span><span class="sln">54</span></div>
+              <div class="srow" data-sym="interject:78"><span class="sk sk-f">fn</span><span class="sn">interject</span><span class="sp">(text)</span><span class="sln">78</span></div>
+              <div class="srow" data-sym="stopTurn:95"><span class="sk sk-f">fn</span><span class="sn">stopTurn</span><span class="sln">95</span></div>
+              <div class="srow" data-sym="compact:112"><span class="sk sk-f">fn</span><span class="sn">compact</span><span class="sln">112</span></div>
+              <div class="srow" data-sym="enqueue:134"><span class="sk sk-f">fn</span><span class="sn">enqueue</span><span class="sp">(msg)</span><span class="sln">134</span></div>
+              <div class="srow" data-sym="onTurnComplete:158"><span class="sk sk-f">fn</span><span class="sn">onTurnComplete</span><span class="sln">158</span></div>
+              <div class="srow" data-sym="applyEvent:187"><span class="sk sk-f">fn</span><span class="sn">applyEvent</span><span class="sp">(ev)</span><span class="sln">187</span></div>
+              <div class="srow" data-sym="queue:22"><span class="sk sk-v">f</span><span class="sn">queue</span><span class="sp">SendQueues</span><span class="sln">22</span></div>
+              <div class="srow" data-sym="bg:24"><span class="sk sk-v">f</span><span class="sn">bg</span><span class="sp">BackgroundTasks</span><span class="sln">24</span></div>
+              <div class="srow" data-sym="ctx:26"><span class="sk sk-v">f</span><span class="sn">ctx</span><span class="sp">ChatSnapshot</span><span class="sln">26</span></div>
+            </div>
+          </div>
+
+        </div><!-- /center-right -->
+
+      </div><!-- /center-body -->
+    </div><!-- /center -->
+  </div><!-- /main -->
+
+  <!-- Status bar -->
+  <div class="status">
+    <span class="ok">●</span>
+    <span>tree-sitter (MIT)</span>
+    <span>TypeScript · TSX</span>
+    <span class="warn">순환 2건</span>
+    <span class="warn">층 위반 1건</span>
+    <span class="sp">헥사고날 모드 · 353 파일 · 2.8s</span>
+  </div>
+
+  <!-- AI context modal (preview of what gets sent) -->
+  <div class="ai-overlay" id="ai-overlay">
+    <div class="ai-modal">
+      <div class="ai-modal-head">
+        <span class="ic">✦</span>
+        <span class="t">코어 어시스턴트로보내는 컨텍스트</span>
+        <button class="close" id="ai-close">✕</button>
+      </div>
+      <div class="ai-modal-body" id="ai-modal-body">
+<span class="ctx-label">현재 파일</span>
+<span class="file-path">src/services/chat.ts</span> (312줄, <span class="layer-tag">domain</span> 층)
+
+<span class="ctx-label">영향 반경</span>
+blast radius: 67 / 353 파일 (19%)
+1촌 8: engine, llm, sendQueue, bgTasks, attachments, chatReducer, contract, usage
+2촌 15: App, ChatTurn, Composer, ConversationView, chatState, Sidebar, Notices, FilePreview, ...
+
+<span class="ctx-label">이 파일이 import하는 것</span>
+engineModelId, llm, attachments, sendQueue, backgroundTasks, i18n, modes, usage, chatReducer, contract
+
+<span class="ctx-label">층 위반</span>
+<span class="violation">▲ chat.ts (domain) → attachmentsHost (adapter) — 안쪽→바깥 방향 위반</span>
+
+<span class="ctx-label">사용자 질문</span>
+chat.ts 의 attachmentsHost 의존을 어떻게 해소할 수 있을까?</div>
+      <div class="ai-modal-foot">
+        <span class="hint">chat.compose 로 전송됩니다. send=true 이면 바로 실행됩니다.</span>
+        <button class="send-btn" id="ai-modal-send">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+<script>
+// ─── Extension channel (production: parent.postMessage) ───
+// Mock for prototype:
+let seq = 0
+const waiting = new Map()
+function call(method, params) {
+  const id = ++seq
+  return new Promise((resolve) => {
+    setTimeout(() => resolve({ ok: true, result: {} }), 300)
+  })
+}
+
+// ─── State ───
+const state = {
+  file: 'src/services/chat.ts',
+  layer: 'domain',
+  blast: 67,
+  total: 353,
+  symbols: [
+    { name: 'ChatSession', line: 18, kind: 'class' },
+    { name: 'send', line: 54, kind: 'fn' },
+    { name: 'compact', line: 112, kind: 'fn' },
+  ],
+  violations: [
+    { from: 'chat.ts', fromLayer: 'domain', to: 'attachmentsHost', toLayer: 'adapter' },
+  ],
+  aiMode: false,
+}
+
+// ─── Toast ───
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  clearTimeout(el._t)
+  el._t = setTimeout(() => el.classList.remove('show'), 2200)
+}
+
+// ─── Build AI context message ───
+function buildContext(type) {
+  let ctx = ''
+  ctx += `[code-map] ${state.file} (${state.layer})\n\n`
+  ctx += `영향 반경: ${state.blast}/${state.total} (${Math.round(state.blast/state.total*100)}%)\n`
+  ctx += `1촌 8: engine, llm, sendQueue, bgTasks, attachments, chatReducer, contract, usage\n`
+  ctx += `2촌 15: App, ChatTurn, Composer, ConversationView, chatState, ...\n\n`
+  if (type === 'violation') {
+    ctx += `층 위반: ${state.violations[0].from} (${state.violations[0].fromLayer}) → ${state.violations[0].to} (${state.violations[0].toLayer})\n`
+    ctx += `이 의존 관계를 헥사고날 원칙에 맞게 해소하는 방법을 알려줘.`
+  } else if (type === 'blast') {
+    ctx += `이 파일의 blast radius가 ${state.blast}개(${Math.round(state.blast/state.total*100)}%)로 큰데, 리팩터링하면 어떤 파일부터 손대야 할까?`
+  } else if (type === 'symbol') {
+    const sym = state._selectedSym || state.symbols[0]
+    ctx += `chat.ts 의 ${sym.name} (line ${sym.line}) 심볼 주변 의존 관계와 변경 위험도를 분석해줘.`
+  } else if (type === 'circular') {
+    ctx += `순환 의존 2건:
+1) llm.ts → follow.ts → history.ts → llm.ts
+2) llm.ts → service.ts → migrate.ts → llm.ts
+이 순환을 헥사고날 원칙에 맞게 해소하는 방법을 알려줘.`
+  } else {
+    ctx += document.getElementById('ai-input').value || '이 파일 구조를 설명해줘.'
+  }
+  return ctx
+}
+
+// ─── Click handlers ───
+document.addEventListener('click', e => {
+  const t = e.target
+
+  // Cell / file chip selection
+  if (t.classList && (t.classList.contains('cell') || t.classList.contains('fc') || t.classList.contains('ref'))) {
+    document.querySelectorAll('.cell.sel,.fc.selected').forEach(el => { el.classList.remove('sel','selected') })
+    t.classList.add('sel')
+    state.file = t.textContent.trim()
+  }
+
+  // AI buttons
+  if (t.classList && t.classList.contains('ai-btn')) {
+    e.stopPropagation()
+    const type = t.dataset.ai
+    if (type === 'violation') {
+      showAiModal('violation')
+    } else if (type === 'blast') {
+      showAiModal('blast')
+    } else if (type === 'symbol') {
+      const sel = document.querySelector('.srow.selected')
+      if (sel) {
+        const parts = sel.dataset.sym.split(':')
+        state._selectedSym = { name: parts[0], line: parseInt(parts[1]) || 0 }
+      }
+      showAiModal('symbol')
+    } else if (type === 'file') {
+      showAiModal('file')
+    }
+  }
+
+  // Symbol row selection
+  if (t.closest && t.closest('.srow')) {
+    const row = t.closest('.srow')
+    document.querySelectorAll('.srow.selected').forEach(el => el.classList.remove('selected'))
+    row.style.background = 'rgba(122,162,255,0.15)'
+    setTimeout(() => { if (!row.matches(':hover')) row.style.background = '' }, 600)
+    row.classList.add('selected')
+  }
+})
+
+// ─── AI Modal ───
+function showAiModal(type) {
+  const body = document.getElementById('ai-modal-body')
+  const ctx = buildContext(type)
+  body.textContent = ctx
+  document.getElementById('ai-overlay').classList.add('show')
+  state._aiType = type
+}
+
+document.getElementById('ai-close').addEventListener('click', () => {
+  document.getElementById('ai-overlay').classList.remove('show')
+})
+document.getElementById('ai-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('show')
+})
+document.getElementById('ai-modal-send').addEventListener('click', () => {
+  const ctx = document.getElementById('ai-modal-body').textContent
+  call('chat.compose', { text: ctx, send: true })
+  document.getElementById('ai-overlay').classList.remove('show')
+  toast('코어 어시스턴트에 전송했습니다')
+})
+
+// ─── AI bar (inline, bottom of center-left) ───
+const aiBar = document.getElementById('ai-bar')
+document.getElementById('ai-mode-btn').addEventListener('click', function() {
+  state.aiMode = !state.aiMode
+  this.classList.toggle('active', state.aiMode)
+  aiBar.classList.toggle('show', state.aiMode)
+  if (state.aiMode) document.getElementById('ai-input').focus()
+})
+document.getElementById('ai-cancel').addEventListener('click', () => {
+  state.aiMode = false
+  document.getElementById('ai-mode-btn').classList.remove('active')
+  aiBar.classList.remove('show')
+})
+document.getElementById('ai-send').addEventListener('click', () => {
+  const text = document.getElementById('ai-input').value
+  if (!text.trim()) return
+  const msg = `[code-map] ${state.file} (${state.layer})\n\n${text}`
+  call('chat.compose', { text: msg, send: true })
+  toast('전송했습니다')
+})
+document.getElementById('ai-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('ai-send').click()
+  if (e.key === 'Escape') document.getElementById('ai-cancel').click()
+})
+
+// ─── Right panel drilldown: symbols → call graph → symbol detail ───
+const symListPanel  = document.getElementById('sym-list-panel')
+const cgPanel       = document.getElementById('cg-panel')
+const symDetailPanel= document.getElementById('sym-detail-panel')
+
+function showPanel(which) {
+  symListPanel.style.display   = which === 'symbols' ? '' : 'none'
+  cgPanel.style.display        = which === 'callgraph' ? '' : 'none'
+  symDetailPanel.style.display = which === 'symbol-detail' ? '' : 'none'
+}
+showPanel('symbols')
+
+// Click cg-fn → open symbol detail
+document.getElementById('cg-body').addEventListener('click', e => {
+  const row = e.target.closest('.cg-fn')
+  if (!row) return
+  document.querySelectorAll('.cg-fn.sel').forEach(el => el.classList.remove('sel'))
+  row.classList.add('sel')
+  const fn = row.dataset.fn
+  // Populate detail
+  const detailBody = symDetailPanel.querySelector('code')
+  if (fn === 'send') {
+    symDetailPanel.querySelector('.rp-title').textContent = 'send — 상세'
+    detailBody.innerHTML =
+      '<span style="color:var(--purple)">async</span> <span style="color:var(--pink)">function</span> <span style="color:var(--amber)">send</span>(\n' +
+      '  msg: <span style="color:var(--red)">string</span>,\n' +
+      '  opts?: <span style="color:var(--blue)">SendOpts</span>\n' +
+      '): <span style="color:var(--blue)">Promise</span>&lt;<span style="color:var(--green)">void</span>&gt;'
+    symDetailPanel.querySelectorAll('.dg-row').forEach((r,i) => {
+      const targets = [
+        ['llm.stream','llm.ts'],['engine.run','engine.ts'],
+        ['sendQueue.push','sendQueue.ts'],['bgTasks.check','bgTasks.ts']
+      ]
+      if (targets[i]) { r.innerHTML = `<span class="dg-from">→</span> ${targets[i][0]} <span class="dg-file">${targets[i][1]}</span>` }
+    })
+  } else {
+    symDetailPanel.querySelector('.rp-title').textContent = fn + ' — 상세'
+    detailBody.textContent = `function ${fn}(...)`
+  }
+  showPanel('symbol-detail')
+})
+
+// Back button in symbol detail
+document.getElementById('sym-detail-close').addEventListener('click', () => {
+  showPanel('callgraph')
+})
+
+// Click symbol row → switch to call graph
+document.getElementById('sym-list-panel').addEventListener('click', e => {
+  const row = e.target.closest('.srow')
+  if (!row) return
+  document.querySelectorAll('.srow.selected').forEach(el => el.classList.remove('selected'))
+  row.classList.add('selected')
+  const s = row.dataset.sym
+  const fnName = s.split(':')[0].replace('new ','')
+  const cgRows = document.querySelectorAll('.cg-fn')
+  const match = [...cgRows].find(r => r.dataset.fn === fnName)
+  if (match) match.classList.add('sel')
+  showPanel('callgraph')
+})
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "extensions": [
+    {
+      "id": "code-map",
+      "name": "코드 지도",
+      "description": "프로젝트 구조를 층 단면도로 보고, 한 파일을 고치면 어디까지 번지는지 봅니다",
+      "version": "0.1.0",
+      "zip": "dist/code-map-0.1.0.zip",
+      "sha256": "88134965a6225402bdc70132f837b2af2adc19891719c5a510f8f69de4ea89af"
+    },
+    {
+      "id": "ja-pack",
+      "name": "日本語 언어 팩 (예제)",
+      "description": "앱 화면 문구를 일본어로 바꾸는 예제 언어 팩",
+      "version": "0.1.0",
+      "zip": "dist/ja-pack-0.1.0.zip",
+      "sha256": "57ab625ae7eddb091555b6e2adf26b8f20235486970c84b52caed6af131fd634"
+    },
+    {
+      "id": "ladder-demo",
+      "name": "사다리 게임",
+      "description": "한 파일짜리 사다리 타기 — 결과를 적고 줄을 따라가 봅니다",
+      "version": "1.0.0",
+      "zip": "dist/ladder-demo-1.0.0.zip",
+      "sha256": "50a8e2e554dff48682fed486348fef83c548cd40ab56551b6d0adf23a2ad211b"
+    },
+    {
+      "id": "sql-tuning",
+      "name": "SQL 튜닝",
+      "description": "개발 DB 를 조회만 해서 느린 SQL · MyBatis 매퍼 · JPA 코드의 실행계획을 읽고, 고친 SQL · 힌트 · 인덱스(제안만)를 실측으로 비교해 답합니다",
+      "version": "0.7.0",
+      "zip": "dist/sql-tuning-0.7.0.zip",
+      "sha256": "7ecae0d57db596d07a7197930030e020d5f5a2ce2573db0cc260deb84fa7b01c"
+    },
+    {
+      "id": "tetris-demo",
+      "name": "테트리스",
+      "description": "한 파일짜리 테트리스 게임",
+      "version": "1.0.0",
+      "zip": "dist/tetris-demo-1.0.0.zip",
+      "sha256": "76acd4ee041cb12863856e2d495dbaf08a13a576122d40479aa9a4089c42dff3"
+    },
+    {
+      "id": "vi-pack",
+      "name": "Tiếng Việt 언어 팩 (예제)",
+      "description": "앱 화면 문구를 베트남어로 바꾸는 예제 언어 팩",
+      "version": "0.1.0",
+      "zip": "dist/vi-pack-0.1.0.zip",
+      "sha256": "75846de6e01944e91de354d79d8c16f11b4efe1713d10e02ca1c3f53134d382b"
+    },
+    {
+      "id": "zh-cn-pack",
+      "name": "简体中文 언어 팩 (예제)",
+      "description": "앱 화면 문구를 간체 중국어로 바꾸는 예제 언어 팩",
+      "version": "0.1.0",
+      "zip": "dist/zh-cn-pack-0.1.0.zip",
+      "sha256": "659624030ac6d53268d1f2e5d092c4bc049d9558d3b49ed30b7f07d0b101cb0c"
+    }
+  ]
+}

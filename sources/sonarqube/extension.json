@@ -1,0 +1,38 @@
+{
+  "id": "sonarqube",
+  "name": "SonarQube",
+  "description": "이미 돌고 있는 SonarQube 서버(예: Docker)에 주소와 토큰으로 붙어 지금 프로젝트를 분석하고, 품질 게이트·이슈를 봅니다",
+  "details": "오른쪽 패널의 + 메뉴 › 확장 › SonarQube 로 엽니다.\nSonarQube 서버는 확장에 들어 있지 않습니다 — 먼저 띄워 두세요(예: Docker Desktop 의 sonarqube:community, http://127.0.0.1:9000).\n패널의 서버 칸에 주소와 토큰을 넣고 [연결 확인] 을 누릅니다. 토큰은 SonarQube 웹 화면 › My Account › Security 에서 만듭니다. 토큰은 앱이 이 기기에 암호화해 보관하고 패널은 다시 읽지 못합니다.\n[분석] 으로 지금 프로젝트를 분석합니다 — 분석기(스캐너·Java)는 확장에 들어 있어 이 기기에서 돌고, 결과를 그 서버에 올립니다. 범위를 전체 · 폴더·파일 · 내 변경(이 브랜치에서 바뀐 파일과 커밋 안 한 파일)으로 고를 수 있고, 범위 결과는 전체 결과와 따로 보관합니다.\n이슈의 파일 경로를 누르면 그 파일이 열립니다. [수정 요청](여러 개는 골라서 한 번에)을 누르면 새 대화가 열리고 수정 요청이 바로 보내집니다 — 덧붙일 말은 그 대화에서 이어서 하세요. 수정은 함께 설치되는 sonarqube-fix 스킬을 따라 해당 부분만, 동작을 바꾸지 않게 고치고, 고친 파일을 SonarQube 로 다시 검사해 해결됐는지 알려 줍니다.\n대화에서는 AI 가 스스로 분석을 돌리고 결과를 보고합니다(sonarqube_analyze 도구 — 파일 범위 지정 가능, 수정 뒤 재검사 등).\n마지막 결과는 서버에 닿지 않아도 보이고, 확장을 지울 때까지 남습니다.",
+  "version": "0.7.0",
+  "entry": "index.html",
+  "permissions": [
+    "network",
+    "project",
+    "chat",
+    "tools"
+  ],
+  "tools": [
+    {
+      "name": "analyze",
+      "description": "Run a SonarQube analysis of the current project against the SonarQube server configured in the SonarQube panel (address + token) and wait until it is processed. No arguments: the whole project (project key from sonar-project.properties, else the project folder name). With `paths` (project-relative file or folder paths): that scope only, stored under a separate project key (`<key>__scope`, same rule as the panel). Returns the open issues of that analysis, or an error (server not configured or not reachable, scanner failed, …). If the analysis is still going when the time budget is up it returns status \"processing\" — call it again to get the result.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Project-relative file or folder paths to analyze. Omit for the whole project."
+          }
+        }
+      },
+      "command": "tools/analyze.mjs",
+      "env": {
+        "LITECODE_DATA_DIR": "${dataDir}"
+      },
+      "timeoutMs": 300000
+    }
+  ],
+  "skills": [
+    "skills/sonarqube-fix"
+  ]
+}

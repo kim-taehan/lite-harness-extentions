@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SonarQube</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c1f26;--sub:#6b7180;--faint:#9aa0ab;--line:#e3e5ea;--soft:#eef0f4;--accent:#4176e6;--ok:#23774a;--ok-bg:#e9f6ee;--bad:#a12a2f;--bad-bg:#fdecec;--warn:#9a5b00;--warn-bg:#fff3e0;--btn:#1c1f26;--btn-text:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f2228;--text:#e8eaf0;--sub:#a3a9b5;--faint:#7c8290;--line:#2e323a;--soft:#2a2e36;--accent:#7aa2ff;--ok:#6fd39b;--ok-bg:#1d3327;--bad:#ff8a8f;--bad-bg:#3a2224;--warn:#f5b860;--warn-bg:#3a2e1c;--btn:#e8eaf0;--btn-text:#16181d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif}
+main{display:flex;flex-direction:column;gap:12px;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.pad{padding:14px 16px}
+.row{display:flex;align-items:center;gap:8px}
+.grow{flex:1;min-width:0}
+h1{margin:0;font-size:15px;font-weight:600}
+.sub{color:var(--sub);font-size:12px}
+.faint{color:var(--faint)}
+button{font:inherit;cursor:pointer;border-radius:8px;height:30px;padding:0 12px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+button.primary{border:0;background:var(--btn);color:var(--btn-text);font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+.path{display:inline-flex;align-items:center;gap:4px;min-height:26px;max-width:100%;padding:0 4px 0 10px;border-radius:6px;background:var(--soft);font:12px ui-monospace,Menlo,monospace;word-break:break-all}
+.path button{height:20px;width:20px;padding:0;border:0;background:transparent;color:var(--faint)}
+.field{display:flex;align-items:center;gap:8px;margin-top:10px}
+.field>label{width:52px;flex-shrink:0;color:var(--sub);font-size:12px}
+.field input{flex:1;min-width:0;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font:12px ui-monospace,Menlo,monospace}
+.gate{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px}
+.gate.ok{background:var(--ok-bg);color:var(--ok)}
+.gate.bad{background:var(--bad-bg);color:var(--bad)}
+.gate b{font-size:14px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
+.metric{padding:10px;border:1px solid var(--line);border-radius:10px}
+.metric span{display:block;font-size:11.5px;color:var(--sub)}
+.metric b{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.issue{display:flex;gap:10px;padding:10px 16px;border-top:1px solid var(--line)}
+.sev{flex-shrink:0;margin-top:2px;height:18px;padding:0 6px;border-radius:4px;font-size:11px;font-weight:600;line-height:18px}
+.sev.high{background:var(--bad-bg);color:var(--bad)}
+.sev.mid{background:var(--warn-bg);color:var(--warn)}
+.sev.low{background:var(--soft);color:var(--sub)}
+.fix{height:24px;padding:0 8px;font-size:11.5px}
+.file{border:0;background:none;padding:0;height:auto;max-width:100%;color:var(--accent);font:12px ui-monospace,Menlo,monospace;text-align:left;cursor:pointer;white-space:normal;overflow-wrap:anywhere;word-break:break-all}
+.issue>.grow{min-width:0}
+.col{min-width:0}
+.found-dir{color:var(--faint)}
+.found-name{font-weight:600}
+.error{padding:8px 10px;border-radius:8px;background:var(--bad-bg);color:var(--bad);font-size:12.5px;white-space:pre-wrap;word-break:break-word}
+.note{padding:8px 10px;border-radius:8px;background:var(--soft);color:var(--sub);font-size:12.5px}
+.tree{height:clamp(240px,55vh,1200px);overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px 0;background:var(--card)}
+.tree-row{display:flex;align-items:center;gap:4px;height:28px;padding-right:6px}
+.tree-row:hover{background:var(--soft)}
+.tree-row.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.twist{width:20px;height:20px;padding:0;border:0;background:transparent;color:var(--sub);display:inline-grid;place-items:center;flex-shrink:0}
+.tree-name{font:12px ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tree-row input{margin:0 4px 0 0;flex-shrink:0;accent-color:var(--accent)}
+/* 범위 — 3칸 버튼 (2026-11-03 시안 "SonarQube 범위 고르기") */
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px}
+.seg button{flex:1;height:28px;border:0;background:transparent;color:var(--sub);font-size:12.5px;border-radius:7px}
+.seg button[aria-checked=true]{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.search{width:100%;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font:12.5px -apple-system,system-ui,sans-serif}
+.quick{height:24px;padding:0 10px;border-radius:12px;font-size:12px;color:var(--sub)}
+.quick b{color:var(--text);font-weight:600}
+.link{border:0;background:none;height:auto;padding:0;color:var(--accent);font-size:12px;font-weight:600}
+.key{font:11.5px ui-monospace,Menlo,monospace;color:var(--sub)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px 16px}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (min-width:800px){.cols.two{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start}.cols.two .tree{height:calc(100vh - 230px)}}
+pre{margin:0;max-height:160px;overflow:auto;font:11px ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body>
+<main id="app"><div class="card pad sub">불러오는 중…</div></main>
+<script>
+// SonarQube 확장 패널 (이슈 #545) — 이미 돌고 있는 SonarQube 서버(예: Docker)에 붙어 지금 프로젝트를 분석하고 결과를 본다.
+// 앱과는 통로로만 말한다: parent.postMessage({ litecode: 1, id, method, params }) → { litecode: 1, id, ok, result | error }.
+// 서버 주소·토큰은 앱이 보관한다(network.setConnection, 이슈 #964) — 그 주소로 가는 network.fetch 에 인증은 앱이 붙이고, 이 패널은 토큰을 다시 읽지 못한다.
+// 토큰은 사용자가 넣지 않는다 — 아이디·비번으로 로그인하면 패널이 그 계정의 토큰을 만들어 맡기고, 비번은 저장하지 않는다 (이슈 #1047).
+// 분석은 확장의 analyze 도구(tools.run — AI 가 부르는 것과 같은 실행 파일)가 동봉 스캐너로 돌린다.
+
+let seq = 0
+const waiting = new Map()
+window.addEventListener('message', (event) => {
+  const data = event.data
+  if (event.source !== parent || !data || data.litecode !== 1 || !waiting.has(data.id)) return
+  const { resolve } = waiting.get(data.id)
+  waiting.delete(data.id)
+  resolve(data)
+})
+/** 통로 호출 — 실패면 Error(code) 를 던진다 */
+function call(method, params) {
+  const id = ++seq
+  return new Promise((resolve, reject) => {
+    waiting.set(id, { resolve: (reply) => (reply.ok ? resolve(reply.result) : reject(new Error(reply.error))) })
+    parent.postMessage({ litecode: 1, id, method, params }, '*')
+  })
+}
+
+const state = {
+  conn: undefined, // network.connection 결과 { url, token }
+  account: undefined, // storage 'account' — 로그인한 계정과 만든 토큰 이름 { login, tokenName } (토큰을 직접 넣던 옛 연결이면 없다)
+  check: undefined, // { phase: 'checking' | 'ok' | 'failed', detail }
+  project: undefined, // { name, projectKey }
+  scope: 'all', // all | paths | changes
+  paths: [],
+  changes: undefined, // { base, files } | { error }
+  analysis: undefined, // { phase: 'scanning' | 'processing' | 'done' | 'failed', detail }
+  results: undefined, // { key, gate, measures, issues, total, missing } | { error }
+  openTabs: undefined, // 오른쪽 패널에 연 파일 탭 (project.openTabs) — 옛 앱이면 null
+  count: undefined, // 고른 범위의 파일 수 { key, count, truncated } (project.countFiles)
+  error: undefined,
+}
+
+const ERROR_TEXT = {
+  'no-project': '열린 프로젝트가 없습니다',
+  'not-configured': '서버에 먼저 로그인하세요',
+  'token-missing': '서버에 먼저 로그인하세요',
+  'token-invalid': '저장된 로그인이 더 이상 맞지 않습니다 — 로그아웃한 뒤 다시 로그인하세요',
+  'login-missing': '아이디와 비밀번호를 넣어 주세요',
+  'login-invalid': '아이디나 비밀번호가 맞지 않습니다. SonarQube 웹 화면에서 쓰는 계정으로 다시 넣어 주세요.',
+  'server-unreachable': '서버에 닿지 않거나 아직 준비되지 않았습니다 — SonarQube(Docker)가 돌고 있는지 보세요',
+  'network-failed': '서버에 닿지 못했습니다 — SonarQube(Docker)가 돌고 있는지, 주소가 맞는지 보세요',
+  'network-timeout': '서버가 답하지 않습니다',
+  'network-denied': '이 주소로의 접속을 거절했습니다 — [로그인] 을 다시 누르면 다시 묻습니다',
+  'tls-failed': '인증서 문제로 접속하지 못했습니다',
+  'url-invalid': '주소가 올바르지 않습니다 (http:// 또는 https://)',
+  'address-reserved': '이 주소는 쓸 수 없습니다 (앱 자신의 주소)',
+  'secrets-unavailable': '이 기기에서 토큰을 암호화해 보관할 수 없습니다',
+  'scope-empty': '고른 범위에 분석할 파일이 없습니다',
+  'analysis-failed': '분석에 실패했습니다',
+  busy: '이미 분석하고 있습니다',
+  'git-unavailable': 'git 이 없어 내 변경을 알 수 없습니다',
+  'not-a-repo': '이 프로젝트는 git 저장소가 아닙니다',
+  'too-many-changes': '바뀐 파일이 너무 많습니다 — 폴더로 골라 주세요',
+}
+const text = (code) => ERROR_TEXT[code] || code
+
+const el = (tag, attrs = {}, ...children) => {
+  const node = document.createElement(tag)
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value === undefined || value === false) continue
+    if (key.startsWith('on')) node.addEventListener(key.slice(2), value)
+    else if (key === 'class') node.className = value
+    else node.setAttribute(key, value === true ? '' : value)
+  }
+  for (const child of children.flat(Infinity)) if (child !== undefined && child !== null && child !== false) node.append(child)
+  return node
+}
+
+// --- 서버 연결 (이슈 #964) ---
+
+const DEFAULT_URL = 'http://127.0.0.1:9000'
+/** 입력 중인 값 — 비밀번호는 로그인하면 비운다 */
+const form = { url: DEFAULT_URL, login: '', password: '' }
+
+async function loadConnection() {
+  state.conn = await call('network.connection')
+  state.account = (await call('storage.get', { key: 'account' })) ?? undefined
+  form.url = state.conn.url ?? DEFAULT_URL
+  form.login = state.account?.login ?? ''
+}
+
+/** [로그인] — 그 계정으로 토큰을 만들어(api/user_tokens/generate) 앱에 맡긴다. 앱은 맡긴 서버로 가는 요청의 인증을 늘 자기가 붙이므로
+ *  (패널이 넣은 것은 버린다) 로그인하는 동안은 연결을 지워 두고 아이디·비번(Basic)을 직접 보낸다 */
+async function signIn() {
+  state.check = { phase: 'checking' }
+  render()
+  let url
+  try {
+    const login = form.login.trim()
+    if (!login || !form.password) throw new Error('login-missing')
+    url = form.url.trim().replace(/\/+$/, '')
+    if (!/^https?:\/\/[^/]/.test(url)) throw new Error('url-invalid')
+    await call('network.setConnection', { url: null })
+    state.conn = { url, token: false }
+    const status = await api('/api/system/status')
+    if (status?.status !== 'UP') throw new Error(`서버가 아직 준비되지 않았습니다 (${status?.status ?? '응답 없음'})`)
+    const basic = `Basic ${btoa(String.fromCharCode(...new TextEncoder().encode(`${login}:${form.password}`)))}`
+    const tokenName = `litecode-${new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '')}`
+    const made = await post('/api/user_tokens/generate', { name: tokenName }, basic)
+    if (!made?.token) throw new Error('login-invalid')
+    state.conn = await call('network.setConnection', { url, token: made.token })
+    state.account = { login: made.login ?? login, tokenName }
+    await call('storage.set', { key: 'account', value: state.account })
+    form.password = ''
+    await verify()
+  } catch (error) {
+    // 실패해도 주소는 남긴다 (토큰 없이)
+    if (url && !state.conn?.token) state.conn = await call('network.setConnection', { url }).catch(() => state.conn)
+    state.check = { phase: 'failed', detail: text(error.message) }
+    render()
+  }
+}
+
+/** [로그아웃] — 만든 토큰을 서버에서 폐기하고(실패해도 넘어간다) 앱에 맡긴 토큰을 지운다 */
+async function signOut() {
+  if (state.account?.tokenName) await post('/api/user_tokens/revoke', { name: state.account.tokenName }).catch(() => undefined)
+  state.conn = await call('network.setConnection', { token: null })
+  await call('storage.delete', { key: 'account' })
+  state.account = undefined
+  state.check = undefined
+  state.results = undefined
+  render()
+}
+
+/** 저장된 토큰으로 서버 상태(api/system/status)와 인증(api/authentication/validate)을 본다 */
+async function verify() {
+  state.check = { phase: 'checking' }
+  render()
+  try {
+    const status = await api('/api/system/status')
+    if (status?.status !== 'UP') throw new Error(`서버가 아직 준비되지 않았습니다 (${status?.status ?? '응답 없음'})`)
+    const auth = await api('/api/authentication/validate')
+    if (auth?.valid !== true) throw new Error('token-invalid')
+    state.check = { phase: 'ok', version: status.version }
+  } catch (error) {
+    state.check = { phase: 'failed', detail: text(error.message) }
+  }
+  render()
+  if (connected()) loadResults()
+}
+
+// --- 서버 요청 ---
+
+async function api(pathAndQuery) {
+  const response = await call('network.fetch', { url: state.conn.url + pathAndQuery, method: 'GET' })
+  if (response.status === 404) return undefined
+  if (response.status === 401 || response.status === 403) throw new Error('token-invalid')
+  if (response.status >= 400) throw new Error(`HTTP ${response.status}`)
+  return JSON.parse(response.body)
+}
+
+/** 폼 본문 POST — authorization 을 주면 그것으로(맡긴 연결이 없을 때만 앱이 그대로 보낸다), 401 은 login-invalid */
+async function post(path, fields, authorization) {
+  const headers = { 'content-type': 'application/x-www-form-urlencoded', ...(authorization && { authorization }) }
+  const response = await call('network.fetch', { url: state.conn.url + path, method: 'POST', headers, body: new URLSearchParams(fields).toString() })
+  if (response.status === 401) throw new Error('login-invalid')
+  if (response.status >= 400) throw new Error(`HTTP ${response.status}`)
+  return response.body ? JSON.parse(response.body) : undefined
+}
+
+const resultKey = () => (state.scope === 'all' ? state.project.projectKey : `${state.project.projectKey}__scope`)
+
+// --- 마지막 결과 보관 (이슈 #553) — 서버가 꺼져 있거나 앱을 다시 켜도 보인다. 확장 저장소(storage)에 두어 확장을 지울 때 함께 지워진다.
+// 저장소는 확장당 64KB 라 결과 키 두 개(전체·범위)까지, 이슈는 필요한 필드만, 넘치면 이슈를 줄여 담는다
+
+const SAVED = 'results'
+const saved = {}
+
+function compact(r, issueCount) {
+  return {
+    key: r.key,
+    savedAt: new Date().toISOString(),
+    analysisDate: r.analysisDate,
+    gate: r.gate && { status: r.gate.status, conditions: (r.gate.conditions ?? []).filter((c) => c.status === 'ERROR').map(({ metricKey, actualValue, errorThreshold, status }) => ({ metricKey, actualValue, errorThreshold, status })) },
+    values: r.values,
+    total: r.total,
+    issues: r.issues.slice(0, issueCount).map(({ key, rule, severity, type, message, component, line }) => ({ key, rule, severity, type, message, component, line })),
+  }
+}
+
+async function keepResults(r) {
+  const keys = [r.key, ...Object.keys(saved).filter((k) => k !== r.key)].slice(0, 2)
+  for (const issueCount of [100, 50, 20, 0]) {
+    const next = Object.fromEntries(keys.map((k) => [k, k === r.key ? compact(r, issueCount) : saved[k]]))
+    if (JSON.stringify(next).length > 60 * 1024) continue
+    try {
+      await call('storage.set', { key: SAVED, value: next })
+      for (const k of Object.keys(saved)) delete saved[k]
+      Object.assign(saved, next)
+    } catch {
+      // 보관은 보조 — 못 해도 화면은 그대로
+    }
+    return
+  }
+}
+
+async function forgetResults(key) {
+  if (!saved[key]) return
+  delete saved[key]
+  await call('storage.set', { key: SAVED, value: saved }).catch(() => {})
+}
+
+async function loadSaved() {
+  try {
+    Object.assign(saved, (await call('storage.get', { key: SAVED })) ?? {})
+  } catch {
+    // 없다
+  }
+}
+
+async function loadResults() {
+  if (!state.project || !connected()) return
+  const key = resultKey()
+  try {
+    const q = encodeURIComponent(key)
+    const component = await api(`/api/components/show?component=${q}`)
+    if (!component) {
+      state.results = { key, missing: true }
+      forgetResults(key)
+      return render()
+    }
+    const [gate, measures, issues] = await Promise.all([
+      api(`/api/qualitygates/project_status?projectKey=${q}`),
+      api(`/api/measures/component?component=${q}&metricKeys=bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density`),
+      api(`/api/issues/search?componentKeys=${q}&resolved=false&ps=100&s=SEVERITY&asc=false`),
+    ])
+    const values = Object.fromEntries((measures?.component?.measures ?? []).map((m) => [m.metric, m.value]))
+    state.results = { key, analysisDate: component.component?.analysisDate, gate: gate?.projectStatus, values, issues: issues?.issues ?? [], total: issues?.paging?.total ?? issues?.total ?? 0 }
+    keepResults(state.results)
+  } catch (error) {
+    state.results = { key, error: error.message }
+  }
+  render()
+}
+
+// --- 범위·분석 ---
+
+async function setScope(scope) {
+  state.scope = scope
+  state.results = undefined
+  if (scope === 'paths' && !tree.dirs.has('')) loadDir('')
+  if (scope === 'paths') loadOpenTabs()
+  if (scope === 'changes' && !state.changes) await loadChanges()
+  render()
+  loadResults()
+}
+
+// 폴더·파일 고르기 — 패널 안의 프로젝트 트리(project.listDir). OS 고르기 창은 프로젝트 밖으로 나갈 수 있어 쓰지 않는다 (이슈 #548).
+// 2026-11-03 시안: 줄마다 [추가] 대신 체크박스. 폴더를 고르면 그 폴더 하나가 경로(그 아래는 체크된 채 잠김), 아래 것만 고른 폴더는 반쯤 표시.
+// 찾기는 프로젝트 전체에서(project.findFiles), 옛 앱이면 지금 불러온(펼친 적 있는) 폴더 안에서만 이름 일부로 거른다
+const tree = { dirs: new Map(), expanded: new Set(), query: '', found: undefined, wholeSearch: true }
+
+async function loadDir(dir) {
+  try {
+    tree.dirs.set(dir, await call('project.listDir', { path: dir }))
+  } catch (error) {
+    tree.dirs.set(dir, { error: error.message, entries: [] })
+  }
+  render()
+}
+
+async function loadChanges() {
+  try {
+    state.changes = await call('project.changedFiles')
+  } catch (error) {
+    state.changes = { error: error.message }
+  }
+}
+
+function toggleDir(dir) {
+  if (tree.expanded.has(dir)) tree.expanded.delete(dir)
+  else {
+    tree.expanded.add(dir)
+    if (!tree.dirs.has(dir)) loadDir(dir)
+  }
+  render()
+}
+
+/** 경로 하나 고르기 · 빼기 — 폴더를 고르면 그 아래로 고른 것은 지운다(폴더가 덮는다) */
+function setPath(key, on) {
+  if (on) state.paths = [...state.paths.filter((p) => !p.startsWith(key)), key]
+  else state.paths = state.paths.filter((p) => p !== key)
+  scheduleCount()
+  render()
+}
+
+/** 내 변경 파일을 고른 범위에 더한다 (빠른 범위 칩) */
+async function addChanges() {
+  if (!state.changes) await loadChanges()
+  addFiles(state.changes?.files ?? [])
+}
+
+/** 파일들을 고른 범위에 더한다 — 고른 폴더가 이미 덮는 것은 빼고 */
+function addFiles(files) {
+  for (const file of files) if (!state.paths.some((p) => p === file || (p.endsWith('/') && file.startsWith(p)))) state.paths.push(file)
+  scheduleCount()
+  render()
+}
+
+/** 오른쪽 패널에 연 파일 탭 (빠른 범위 칩 "열린 탭") — 옛 앱(method-unknown)이면 칩을 숨긴다 */
+async function loadOpenTabs() {
+  try {
+    state.openTabs = (await call('project.openTabs')).paths
+  } catch {
+    state.openTabs = null
+  }
+  render()
+}
+
+/** 고른 범위의 파일 수 — 고를 때마다 조금 기다렸다 다시 센다 (project.countFiles). 실패하면 경로 수로 */
+let countTimer
+function scheduleCount() {
+  clearTimeout(countTimer)
+  const key = JSON.stringify(state.paths)
+  if (state.count?.key === key) return
+  state.count = undefined
+  if (!state.paths.length) return
+  countTimer = setTimeout(async () => {
+    try {
+      const { count, truncated } = await call('project.countFiles', { paths: state.paths })
+      if (JSON.stringify(state.paths) === key) state.count = { key, count, truncated }
+    } catch {
+      return
+    }
+    render()
+  }, 300)
+}
+
+const coveredBy = (key) => state.paths.find((p) => p !== key && p.endsWith('/') && key.startsWith(p))
+
+function treeRow(key, label, depth, entry, full) {
+  const covered = coveredBy(key)
+  const checked = !!covered || state.paths.includes(key)
+  const partial = !checked && entry?.dir && state.paths.some((p) => p.startsWith(key))
+  const box = el('input', { type: 'checkbox', 'aria-label': `${key} 고르기`, checked, disabled: !!covered, onchange: (e) => setPath(key, e.target.checked) })
+  box.indeterminate = !!partial
+  return el(
+    'div',
+    { class: `tree-row${checked ? ' on' : ''}`, style: `padding-left:${depth * 16 + 4}px` },
+    entry?.dir
+      ? el('button', { class: 'twist', 'aria-label': `${entry.name} 펼치기`, 'aria-expanded': String(tree.expanded.has(full)), onclick: () => toggleDir(full) }, tree.expanded.has(full) ? '▾' : '▸')
+      : el('span', { class: 'twist' }),
+    box,
+    el('span', { class: 'grow tree-name', title: key, onclick: () => (entry?.dir ? toggleDir(full) : !covered && setPath(key, !checked)) }, label),
+  )
+}
+
+function treeRows(dir, depth) {
+  const listing = tree.dirs.get(dir)
+  if (!listing) return [el('div', { class: 'sub', style: `padding-left:${depth * 16 + 8}px` }, '불러오는 중…')]
+  if (listing.error) return [el('div', { class: 'sub', style: `padding-left:${depth * 16 + 8}px` }, text(listing.error))]
+  const rows = []
+  for (const entry of listing.entries) {
+    const full = dir === '' ? entry.name : `${dir}/${entry.name}`
+    const key = entry.dir ? `${full}/` : full
+    rows.push(treeRow(key, entry.dir ? `${entry.name}/` : entry.name, depth, entry, full))
+    if (entry.dir && tree.expanded.has(full)) rows.push(...treeRows(full, depth + 1))
+  }
+  if (listing.truncated) rows.push(el('div', { class: 'sub', style: `padding-left:${depth * 16 + 8}px` }, '항목이 많아 일부만 보입니다'))
+  return rows
+}
+
+/** 찾기 결과 — 프로젝트 전체에서 이름이 맞는 것(project.findFiles). 줄은 흐린 상위 경로 + 굵은 이름 */
+function foundRows() {
+  const found = tree.found
+  if (!found || found.query !== tree.query.trim()) return [el('div', { class: 'sub', style: 'padding:6px 10px' }, '찾는 중…')]
+  if (found.error) return [el('div', { class: 'sub', style: 'padding:6px 10px' }, text(found.error))]
+  if (!found.items.length) return [el('div', { class: 'sub', style: 'padding:6px 10px' }, '찾지 못했습니다')]
+  const rows = found.items.map((item) => {
+    const key = item.dir ? `${item.path}/` : item.path
+    const cut = item.path.lastIndexOf('/') + 1
+    // 이름이 먼저(굵게), 상위 경로는 뒤에 흐리게 — 좁은 패널에서 잘려도 이름은 보인다
+    const label = [el('span', { class: 'found-name' }, item.path.slice(cut) + (item.dir ? '/' : '')), cut ? el('span', { class: 'found-dir' }, `  ${item.path.slice(0, cut - 1)}`) : null]
+    return treeRow(key, label, 0, item.dir ? undefined : { name: item.path.slice(cut), dir: false }, item.path)
+  })
+  if (found.truncated) rows.push(el('div', { class: 'sub', style: 'padding:6px 10px' }, '많아서 일부만 보입니다 — 더 자세히 쳐 보세요'))
+  return rows
+}
+
+/** 찾기 칸이 바뀌었을 때 — 조금 기다렸다 프로젝트 전체에서 찾는다. 옛 앱이면 펼친 폴더 안에서만 */
+let searchTimer
+function onSearch(query) {
+  tree.query = query
+  clearTimeout(searchTimer)
+  const q = query.trim()
+  const show = () => {
+    const box = document.getElementById('tree')
+    if (box) box.replaceChildren(el('div', { class: 'sub', style: 'padding:4px 8px' }, `${state.project?.name ?? '프로젝트'} 안에서만 고를 수 있습니다`), ...treeBody())
+  }
+  show()
+  if (!q || !tree.wholeSearch) return
+  searchTimer = setTimeout(async () => {
+    try {
+      const { items, truncated } = await call('project.findFiles', { query: q })
+      tree.found = { query: q, items, truncated }
+    } catch (error) {
+      if (error.message === 'method-unknown') tree.wholeSearch = false
+      else tree.found = { query: q, error: error.message, items: [] }
+    }
+    if (tree.query.trim() === q) show()
+  }, 250)
+}
+
+/** 트리 칸의 줄 — 찾는 말이 있으면 찾기 결과, 없으면 트리 */
+function treeBody() {
+  if (!tree.query.trim()) return treeRows('', 0)
+  return tree.wholeSearch ? foundRows() : searchRows()
+}
+
+/** 찾기 (옛 앱) — 불러온 폴더들의 항목 중 이름에 찾는 글이 든 것 (경로 전체로 한 줄씩) */
+function searchRows() {
+  const q = tree.query.trim().toLowerCase()
+  const rows = []
+  for (const [dir, listing] of tree.dirs) {
+    for (const entry of listing.entries ?? []) {
+      if (!entry.name.toLowerCase().includes(q)) continue
+      const full = dir === '' ? entry.name : `${dir}/${entry.name}`
+      const key = entry.dir ? `${full}/` : full
+      rows.push(treeRow(key, key, 0, entry.dir ? undefined : entry, full))
+      if (rows.length >= 200) break
+    }
+  }
+  rows.sort((a, b) => a.textContent.localeCompare(b.textContent))
+  return rows.length ? rows : [el('div', { class: 'sub', style: 'padding:6px 10px' }, '펼친 폴더 안에서 찾지 못했습니다 — 폴더를 펼친 뒤 다시 찾아 보세요')]
+}
+
+function scopePaths() {
+  if (state.scope === 'paths') return state.paths
+  if (state.scope === 'changes') return state.changes?.files ?? []
+  return undefined
+}
+
+async function analyze() {
+  const paths = scopePaths()
+  state.analysis = { phase: 'scanning' }
+  render()
+  let output
+  try {
+    // 도구가 호출 기한(4분) 안에 못 끝내면 processing 으로 답하고 뒤에서 계속 돈다 — 같은 범위로 다시 부르면 그 실행에 붙는다
+    for (;;) {
+      output = await call('tools.run', { name: 'analyze', args: paths === undefined ? {} : { paths } })
+      if (!output.processing) break
+      state.analysis = { phase: 'processing' }
+      render()
+    }
+  } catch (error) {
+    state.analysis = { phase: 'failed', detail: text(error.message) }
+    return render()
+  }
+  if (output.isError) {
+    // 도구의 실패 글은 `<코드>: <사유>` (스캐너 실패면 출력의 끝이 사유)
+    const at = output.text.indexOf(': ')
+    state.analysis = at > 0 ? { phase: 'failed', detail: text(output.text.slice(0, at)), log: output.text.slice(at + 2) } : { phase: 'failed', detail: output.text }
+    return render()
+  }
+  // 성공 글은 `analysis finished (…)` 다음 줄에 결과 JSON
+  let outcome = {}
+  try {
+    outcome = JSON.parse(output.text.slice(output.text.indexOf('\n') + 1))
+  } catch {
+    // 요약만 있다
+  }
+  state.analysis = { phase: 'done', skipped: outcome.skipped }
+  await loadResults()
+}
+
+// --- 그리기 ---
+
+function connectionCard() {
+  const c = state.check
+  const dot = c?.phase === 'ok' ? 'var(--ok)' : c?.phase === 'failed' ? 'var(--bad)' : c?.phase === 'checking' ? '#e0a100' : 'var(--faint)'
+  const title = c?.phase === 'ok' ? '연결됨' : c?.phase === 'failed' ? '연결 안 됨' : c?.phase === 'checking' ? '확인 중…' : '연결 전'
+  const head = (button) =>
+    el(
+      'div',
+      { class: 'row' },
+      el('span', { style: `width:8px;height:8px;border-radius:4px;background:${dot}` }),
+      el('span', { class: 'grow' }, el('b', {}, `SonarQube 서버 · ${title}`), c?.phase === 'ok' && c.version ? el('span', { class: 'faint' }, ` ${c.version}`) : null),
+      button,
+    )
+  const error = c?.phase === 'failed' ? el('div', { class: 'error', style: 'margin-top:10px' }, c.detail) : null
+  if (state.conn?.token) {
+    // 연결되면 한 줄로 접는다 — 주소 · 계정 · 로그아웃은 [설정 ▾] 안에 (2026-11-03 시안)
+    const line = el(
+      'div',
+      { class: 'row' },
+      el('span', { style: `width:8px;height:8px;border-radius:4px;background:${dot};flex-shrink:0` }),
+      el('span', { class: 'grow sub', style: 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap' }, el('b', { style: 'color:var(--text)' }, title), state.account ? ` · ${state.account.login}` : '', ` · ${state.conn.url.replace(/^https?:\/\//, '')}`, c?.phase === 'ok' && c.version ? el('span', { class: 'faint' }, ` · ${c.version}`) : null),
+      el('button', { class: 'link', 'aria-expanded': String(!!state.settings), onclick: () => ((state.settings = !state.settings), render()) }, state.settings ? '설정 ▴' : '설정 ▾'),
+    )
+    return el(
+      'section',
+      { class: 'card', style: 'padding:10px 16px' },
+      line,
+      error,
+      state.settings
+        ? [
+            el('div', { class: 'field' }, el('label', {}, '주소'), el('span', { class: 'grow sub' }, state.conn.url)),
+            el('div', { class: 'field' }, el('label', {}, '계정'), el('span', { class: 'grow' }, state.account ? [el('b', {}, state.account.login), el('span', { class: 'sub' }, ` · 토큰 ${state.account.tokenName}`)] : el('span', { class: 'sub' }, '직접 넣은 토큰'))),
+            el('div', { class: 'row', style: 'margin-top:10px' }, el('span', { class: 'sub grow' }, '[로그아웃]은 저장한 토큰을 지우고 SonarQube 에서도 그 토큰을 폐기합니다.'), el('button', { onclick: signOut, disabled: c?.phase === 'checking' }, '로그아웃')),
+          ]
+        : null,
+    )
+  }
+  return el(
+    'section',
+    { class: 'card pad' },
+    head(el('button', { class: 'primary', onclick: signIn, disabled: c?.phase === 'checking' }, '로그인')),
+    el('div', { class: 'field' }, el('label', { for: 'sq-url' }, '주소'), el('input', { id: 'sq-url', type: 'url', value: form.url, placeholder: DEFAULT_URL, spellcheck: 'false', oninput: (e) => (form.url = e.target.value) })),
+    el('div', { class: 'field' }, el('label', { for: 'sq-login' }, '아이디'), el('input', { id: 'sq-login', value: form.login, autocomplete: 'off', spellcheck: 'false', oninput: (e) => (form.login = e.target.value) })),
+    el('div', { class: 'field' }, el('label', { for: 'sq-password' }, '비밀번호'), el('input', { id: 'sq-password', type: 'password', value: form.password, autocomplete: 'off', oninput: (e) => (form.password = e.target.value), onkeydown: (e) => e.key === 'Enter' && signIn() })),
+    error,
+    el('div', { class: 'sub', style: 'margin-top:10px' }, '서버는 미리 띄워 두세요(예: Docker 의 sonarqube:community). SonarQube 계정으로 로그인하면 토큰을 대신 만들어 저장합니다. 비밀번호는 저장하지 않습니다.'),
+  )
+}
+
+function scopeRow() {
+  const seg = (value, label) => el('button', { role: 'radio', 'aria-checked': String(state.scope === value), onclick: () => setScope(value) }, label)
+  return el('div', { style: 'padding:0 16px 12px' }, el('div', { class: 'seg', role: 'radiogroup', 'aria-label': '검토 범위' }, seg('all', '전체'), seg('paths', '폴더·파일'), seg('changes', '내 변경')))
+}
+
+/** 폴더·파일 고르기 — 빠른 범위 · 찾기 · 체크박스 트리 */
+function picker() {
+  const changes = state.changes?.files?.length
+  return el(
+    'div',
+    { class: 'col' },
+    el(
+      'div',
+      { class: 'row', style: 'flex-wrap:wrap' },
+      el('span', { class: 'sub' }, '빠르게'),
+      el('button', { class: 'quick', onclick: addChanges, title: 'git 으로 바뀐 파일을 고른 범위에 더합니다' }, '내 변경 ', el('b', {}, changes === undefined ? '' : String(changes))),
+      state.openTabs?.length ? el('button', { class: 'quick', onclick: () => addFiles(state.openTabs), title: '오른쪽 패널에 연 파일 탭을 고른 범위에 더합니다' }, '열린 탭 ', el('b', {}, String(state.openTabs.length))) : null,
+    ),
+    el('input', {
+      class: 'search',
+      type: 'search',
+      placeholder: tree.wholeSearch ? '폴더 · 파일 찾기 (예: mapper, Egov*Controller)' : '폴더 · 파일 찾기 (펼친 폴더 안에서)',
+      value: tree.query,
+      spellcheck: 'false',
+      oninput: (e) => onSearch(e.target.value),
+    }),
+    el('div', { class: 'tree', id: 'tree', role: 'tree', 'aria-label': `${state.project?.name ?? ''} 폴더` }, el('div', { class: 'sub', style: 'padding:4px 8px' }, `${state.project?.name ?? '프로젝트'} 안에서만 고를 수 있습니다`), treeBody()),
+  )
+}
+
+/** 고른 범위 + [분석] — 범위마다 무엇을 분석하는지 버튼에 */
+function analyzeBox(analyzing) {
+  const parts = []
+  if (state.scope === 'paths') {
+    parts.push(
+      el('div', { class: 'row' }, el('b', { class: 'grow' }, `고른 범위 · ${state.paths.length}개`), state.paths.length ? el('button', { class: 'link', onclick: () => ((state.paths = []), scheduleCount(), render()) }, '모두 해제') : null),
+      state.paths.length
+        ? el('div', { class: 'row', style: 'flex-wrap:wrap' }, state.paths.map((p) => el('span', { class: 'path', title: p }, p, el('button', { 'aria-label': `${p} 빼기`, onclick: () => setPath(p, false) }, '×'))))
+        : el('div', { class: 'sub' }, '트리에서 체크하세요. 폴더를 고르면 그 아래 전부가 들어갑니다.'),
+    )
+  }
+  if (state.scope === 'changes') {
+    const c = state.changes
+    parts.push(el('div', { class: 'sub' }, !c ? '불러오는 중…' : c.error ? text(c.error) : `바뀐 파일 ${c.files.length}개${c.base ? ` · ${c.base} 대비` : ' · 커밋 안 한 것만'}`))
+  }
+  const counted = state.count?.key === JSON.stringify(state.paths) ? state.count : undefined
+  const pathsLabel = counted ? `분석 · ${counted.count.toLocaleString()}${counted.truncated ? '+' : ''}개 파일` : `분석 · 경로 ${state.paths.length}개`
+  const label = analyzing ? '분석 중…' : state.scope === 'paths' && state.paths.length ? pathsLabel : state.scope === 'changes' && state.changes?.files?.length ? `분석 · 바뀐 파일 ${state.changes.files.length}개` : '분석'
+  parts.push(
+    el(
+      'div',
+      { class: 'row' },
+      el('button', { class: 'primary', onclick: analyze, title: connected() ? undefined : '서버에 연결하면 분석할 수 있습니다', disabled: !connected() || analyzing || (state.scope === 'paths' && state.paths.length === 0) || (state.scope === 'changes' && !(state.changes?.files?.length)) }, label),
+      el('span', { class: 'sub grow' }, state.scope === 'all' ? '프로젝트 전부 · 수십 초' : '결과는 범위별로 따로 보관'),
+    ),
+  )
+  if (analysisNote()) parts.push(analysisNote())
+  return el('div', { class: 'col' }, parts)
+}
+
+function analysisNote() {
+  const a = state.analysis
+  if (!a) return null
+  if (a.phase === 'scanning') return el('div', { class: 'note' }, '분석하는 중… (전체는 수십 초 걸립니다)')
+  if (a.phase === 'processing') return el('div', { class: 'note' }, '아직 분석하는 중… (오래 걸리는 분석은 뒤에서 계속 돕니다)')
+  if (a.phase === 'failed') return el('div', { class: 'error' }, a.detail, a.log ? el('pre', {}, a.log) : null)
+  if (a.skipped?.length) return el('div', { class: 'note' }, `없는 경로는 빼고 분석했습니다: ${a.skipped.join(', ')}`)
+  return null
+}
+
+const SEVERITY = { BLOCKER: ['높음', 'high'], CRITICAL: ['높음', 'high'], MAJOR: ['보통', 'mid'], MINOR: ['낮음', 'low'], INFO: ['낮음', 'low'] }
+const TYPE = { BUG: '버그', VULNERABILITY: '취약점', CODE_SMELL: '코드 냄새', SECURITY_HOTSPOT: '보안 검토' }
+const GATE_METRIC = { new_coverage: '새 코드 커버리지', coverage: '커버리지', new_bugs: '새 버그', new_vulnerabilities: '새 취약점', new_duplicated_lines_density: '새 코드 중복', new_security_hotspots_reviewed: '보안 검토율', new_reliability_rating: '새 코드 신뢰성', new_security_rating: '새 코드 보안', new_maintainability_rating: '새 코드 유지보수성', new_violations: '새 이슈' }
+
+const connected = () => state.check?.phase === 'ok'
+
+// --- 수정 요청 (이슈 #557·#559) — 지금 프로젝트에 새 대화를 열고 요청 글을 곧바로 보낸다(chat.compose send). 덧붙일 말은 그 대화에서 이어서
+const picked = new Set()
+
+function fixPrompt(issues, prefix) {
+  const lines = issues.map((issue) => {
+    const file = issue.component.startsWith(prefix) ? issue.component.slice(prefix.length) : issue.component
+    const [label] = SEVERITY[issue.severity] || ['낮음']
+    return `- \`${file}${issue.line ? `:${issue.line}` : ''}\` — [${TYPE[issue.type] || '이슈'} · ${label}]${issue.rule ? ` (규칙 ${issue.rule})` : ''} ${issue.message}`
+  })
+  // 고치는 방법(해당 부분만·동작 그대로 — YAGNI)은 확장이 함께 설치하는 sonarqube-fix 스킬에 있다 (이슈 #561).
+  // `/sonarqube-fix` 로 시작하면 앱이 스킬 본문을 결정적으로 붙여 보낸다 — 모델이 스킬을 고를지에 기대지 않는다
+  return [`/sonarqube-fix SonarQube 가 찾은 이슈${issues.length > 1 ? ` ${issues.length}개` : ''}를 고쳐 주세요.`, '', ...lines].join('\n')
+}
+
+async function askFix(issues, prefix) {
+  if (!issues.length) return
+  try {
+    await call('chat.compose', { text: fixPrompt(issues, prefix), send: true })
+    picked.clear()
+    render()
+  } catch (error) {
+    state.error = text(error.message)
+    render()
+  }
+}
+
+function results() {
+  const r = connected() ? state.results : saved[resultKey()]
+  if (!r) return el('div', { class: 'sub pad' }, connected() ? '결과를 불러오는 중…' : '이 범위의 보관된 결과가 없습니다. 서버에 연결하면 읽거나 분석할 수 있습니다.')
+  if (r.error) return el('div', { class: 'pad' }, el('div', { class: 'error' }, `결과를 읽지 못했습니다 — ${r.error}`))
+  if (r.missing) return el('div', { class: 'pad sub' }, state.scope === 'all' ? '아직 분석하지 않았습니다. [분석] 을 누르세요.' : '이 범위로 아직 분석하지 않았습니다. [분석] 을 누르세요.')
+  const failed = (r.gate?.conditions ?? []).filter((c) => c.status === 'ERROR')
+  const gateOk = r.gate?.status === 'OK'
+  const prefix = `${r.key}:`
+  const v = r.values
+  const fmt = (value, unit = '') => (value === undefined ? '—' : `${value}${unit}`)
+  return [
+    el(
+      'div',
+      { class: 'pad', style: 'display:flex;flex-direction:column;gap:12px' },
+      r.gate
+        ? el('div', { class: `gate ${gateOk ? 'ok' : 'bad'}` }, el('span', { class: 'grow' }, el('b', {}, gateOk ? '품질 게이트 통과' : '품질 게이트 실패'), failed.length ? el('div', { style: 'font-size:12px' }, failed.map((c) => `${GATE_METRIC[c.metricKey] || c.metricKey} ${c.actualValue} (기준 ${c.errorThreshold})`).join(' · ')) : null))
+        : null,
+      el('div', { class: 'metrics' }, [
+        el('div', { class: 'metric' }, el('span', {}, '버그'), el('b', {}, fmt(v.bugs))),
+        el('div', { class: 'metric' }, el('span', {}, '취약점'), el('b', {}, fmt(v.vulnerabilities))),
+        // 열린 이슈 = 버그 + 취약점 + 코드 냄새 — 코드 냄새가 없으면 낮음 이슈들이 어디에도 안 세어진 것처럼 보였다
+        el('div', { class: 'metric' }, el('span', {}, '코드 냄새'), el('b', {}, fmt(v.code_smells))),
+        el('div', { class: 'metric' }, el('span', {}, '커버리지'), el('b', {}, fmt(v.coverage, '%'))),
+        el('div', { class: 'metric' }, el('span', {}, '중복'), el('b', {}, fmt(v.duplicated_lines_density, '%'))),
+      ]),
+      el(
+        'div',
+        { class: 'row' },
+        el('b', { class: 'grow' }, `열린 이슈 ${r.total}`),
+        r.total > r.issues.length ? el('span', { class: 'sub' }, `위 ${r.issues.length}개만`) : null,
+        picked.size ? el('button', { class: 'primary', onclick: () => askFix(r.issues.filter((issue) => picked.has(issue.key)), prefix) }, `선택한 이슈 수정 요청 (${picked.size})`) : null,
+      ),
+    ),
+    r.issues.map((issue) => {
+      const [label, tone] = SEVERITY[issue.severity] || ['낮음', 'low']
+      const file = issue.component.startsWith(prefix) ? issue.component.slice(prefix.length) : issue.component
+      return el(
+        'div',
+        { class: 'issue' },
+        el('input', { type: 'checkbox', 'aria-label': `${issue.message} 고르기`, checked: picked.has(issue.key), onchange: (e) => (e.target.checked ? picked.add(issue.key) : picked.delete(issue.key), render()), style: 'margin-top:3px' }),
+        el('span', { class: `sev ${tone}` }, label),
+        el(
+          'span',
+          { class: 'grow', style: 'display:flex;flex-direction:column;gap:3px' },
+          el('span', {}, issue.message),
+          el('button', { class: 'file', onclick: () => call('project.openFile', { path: file, ...(issue.line ? { line: issue.line } : {}) }).catch(() => {}) }, `${file}${issue.line ? `:${issue.line}` : ''}`),
+        ),
+        el('span', { style: 'flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px' }, el('span', { class: 'sub' }, TYPE[issue.type] || ''), el('button', { class: 'fix', onclick: () => askFix([issue], prefix) }, '수정 요청')),
+      )
+    }),
+  ]
+}
+
+// [크게 보기] — 앱에 패널 전체 화면을 요청한다(panel.fullscreen, 2026-11-03). 옛 앱(method-unknown)이면 버튼을 숨긴다.
+// 넓은지는 요청 결과가 아니라 지금 창 너비로 본다 — 앱에서 Esc 로 풀어도 맞게
+let fullscreenOk = true
+async function setFullscreen(on) {
+  try {
+    await call('panel.fullscreen', { on })
+  } catch (error) {
+    if (error.message === 'method-unknown') {
+      fullscreenOk = false
+      render()
+    }
+  }
+}
+let lastWide = window.innerWidth >= 800
+window.addEventListener('resize', () => {
+  const wide = window.innerWidth >= 800
+  if (wide !== lastWide) {
+    lastWide = wide
+    render()
+  }
+})
+
+function render() {
+  const app = document.getElementById('app')
+  const parts = []
+  if (state.error) parts.push(el('div', { class: 'error' }, text(state.error)))
+  if (state.conn) parts.push(connectionCard())
+  if (state.project && (connected() || saved[resultKey()] || Object.keys(saved).length)) {
+    const analyzing = state.analysis?.phase === 'scanning' || state.analysis?.phase === 'processing'
+    const shown = connected() ? state.results : saved[resultKey()]
+    const when = shown?.analysisDate ? new Date(shown.analysisDate).toLocaleString() : undefined
+    // 패널이 넓으면(전체 화면 등) 두 칸: 왼쪽 트리 | 오른쪽 고른 범위 · 분석 · 결과 (2026-11-03 시안)
+    const wide = window.innerWidth >= 800
+    const paths = state.scope === 'paths'
+    parts.push(
+      el(
+        'section',
+        { class: 'card' },
+        el(
+          'div',
+          { class: 'row pad' },
+          el('div', { class: 'grow' }, el('h1', {}, state.project.name), el('div', { class: 'key' }, state.project.projectKey, when ? ` · 마지막 분석 ${when}` : '', connected() ? '' : ' · 서버 연결 전 — 마지막 결과')),
+          fullscreenOk ? el('button', { onclick: () => setFullscreen(!wide), title: wide ? '패널을 원래 크기로' : '패널을 크게 — 트리와 결과를 나란히' }, wide ? '⤡ 작게 보기' : '⤢ 크게 보기') : null,
+          el('button', { 'aria-label': '다시 읽기', onclick: loadResults }, '↻'),
+        ),
+        scopeRow(),
+        el('div', { class: `cols${paths && wide ? ' two' : ''}`, style: 'border-top:1px solid var(--line)' }, paths ? picker() : null, el('div', { class: 'col' }, analyzeBox(analyzing), wide && paths ? el('div', { class: 'card', style: 'overflow:hidden' }, results()) : null)),
+        wide && paths ? null : el('div', { style: 'border-top:1px solid var(--line)' }, results()),
+      ),
+    )
+  }
+  app.replaceChildren(...parts)
+}
+
+// 프로젝트 키 — 프로젝트 폴더의 sonar-project.properties 의 sonar.projectKey, 없거나 쓸 수 없으면 프로젝트 폴더 이름에서 만든다(영문·숫자·`-_.:`, 숫자만은 안 된다).
+// analyze 도구(tools/analyze.mjs projectKeyOf)와 같은 규칙 — 도구는 폴더만 알아서 이름이 아니라 폴더로 맞춘다 (이슈 #974). folder 가 없는 옛 앱이면 이름
+async function loadProject() {
+  const { name, folder } = await call('project.info')
+  const valid = (key) => key && /^[A-Za-z0-9_.:-]+$/.test(key) && !/^\d+$/.test(key)
+  try {
+    const found = /^\s*sonar\.projectKey\s*[=:]\s*(.*?)\s*$/m.exec(await call('project.readFile', { path: 'sonar-project.properties' }))?.[1]
+    if (valid(found)) return { name, projectKey: found }
+  } catch {
+    // 파일이 없다
+  }
+  return { name, projectKey: folderKey(folder ?? name) }
+}
+
+/** 폴더 이름 → 키. tools/analyze.mjs 의 folderKey 와 글자까지 같아야 한다 (패널은 그 파일을 불러올 수 없어 복사 — tests/unit/sonarProjectKey.test.ts 가 맞춰 본다) */
+function folderKey(folder) {
+  const made = folder.replace(/[^A-Za-z0-9_.:-]+/g, '-').replace(/^-+|-+$/g, '')
+  if (made === '') return 'project'
+  return /^\d+$/.test(made) ? `p${made}` : made
+}
+
+async function start() {
+  try {
+    state.project = await loadProject()
+    await loadSaved()
+  } catch (error) {
+    state.error = error.message
+  }
+  try {
+    await loadConnection()
+  } catch (error) {
+    state.error = error.message
+  }
+  render()
+  // 저장해 둔 연결이 있으면 곧바로 확인한다
+  if (state.conn?.url && state.conn.token) verify()
+}
+// 다른 탭에서 파일을 열고 돌아오면 "열린 탭" 수를 다시 센다
+window.addEventListener('focus', () => state.scope === 'paths' && loadOpenTabs())
+start()
+</script>
+</body>
+</html>

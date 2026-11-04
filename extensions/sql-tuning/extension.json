@@ -1,0 +1,37 @@
+{
+  "id": "sql-tuning",
+  "name": "SQL 튜닝",
+  "description": "개발 DB 를 조회만 해서 느린 SQL · MyBatis 매퍼 · JPA 코드의 실행계획을 읽고, 고친 SQL · 힌트 · 인덱스(제안만)를 실측으로 비교해 답합니다",
+  "details": "오른쪽 패널의 + 메뉴 › 확장 › SQL 튜닝 에서 개발 DB(Oracle · PostgreSQL)를 넣고 [저장하고 연결 확인] 을 누릅니다. 계정은 조회 전용으로 만드세요 — 확장은 읽기 전용 트랜잭션 · 문장 검사로 한 번 더 막지만 권한을 대신 지키지는 못합니다. 비밀번호는 앱이 이 기기에 암호화해 보관하고 패널은 다시 읽지 못합니다. DB 연결은 AI 가 처음 도구를 쓸 때 맺고 유지하며, 쉬면 닫습니다.\n대화에서 \"이 쿼리(또는 MyBatis 매퍼 · JPA 메서드)가 느려\" 라고 하면 AI 가 함께 설치되는 sql-tuning 스킬을 따라 도구 8개(explain · table_info · top_queries · runtime_plan · impact_check · captured_sql · compare · query)로 DB 를 조회하고, ① SQL 고쳐 쓰기 → ② 힌트 → ③ 인덱스(제안만) 순서로 답합니다. 고친 SQL 은 compare 로 바인드 값 여러 개를 실제로 돌려 결과가 같은지 · 빨라졌는지 확인합니다. DB 와 프로젝트 파일은 바꾸지 않습니다.\n사내 SQL 개발 표준은 패널의 [사내 표준] 탭에서 .md 문서로 넣습니다(확장 zip 에 든 표준보다 우선, 새 대화부터 적용). 표준이 있으면 AI 가 먼저 읽고 규칙 번호를 근거로 답합니다.\n[결과] 탭은 튜닝 이력입니다 — 대화마다 한 줄(대화 제목 · 시간 · 실행계획 · compare · 인덱스 제안 표시)로 최근 대화 20개까지 모이고, 펼치면 그 대화에서 돈 단계와 결과 글이 보입니다. 이 PC 에 남아 앱을 다시 켜도 보이고, [대화로 가기] 로 그 대화를 엽니다. 대화를 지우면 그 대화의 결과도 지워지고, [모두 지우기] 로 한 번에 지웁니다.",
+  "version": "0.7.0",
+  "entry": "index.html",
+  "permissions": [
+    "secrets",
+    "mcp",
+    "chat"
+  ],
+  "mcp": {
+    "command": "server/sql-tuning.mjs",
+    "env": {
+      "SQL_TUNING_DB": "${storage:db}",
+      "SQL_TUNING_HOST": "${storage:host}",
+      "SQL_TUNING_PORT": "${storage:port}",
+      "SQL_TUNING_SERVICE": "${storage:service}",
+      "SQL_TUNING_USER": "${storage:user}",
+      "SQL_TUNING_PASSWORD": "${secret:password}",
+      "SQL_TUNING_SCHEMA": "${storage:schema}",
+      "SQL_TUNING_POOL": "4",
+      "SQL_TUNING_RESULTS_FILE": "${dataDir}/results.json"
+    },
+    "idleMs": 600000,
+    "panelTools": [
+      "recent_results",
+      "server_status",
+      "forget_results",
+      "clear_results"
+    ]
+  },
+  "skills": [
+    "skills/sql-tuning"
+  ]
+}
