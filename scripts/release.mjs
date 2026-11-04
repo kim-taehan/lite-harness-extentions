@@ -5,7 +5,7 @@
 // extension.json 에 "changes": ["바뀐 것", …] 를 적으면 catalog 에 실려 앱의 업데이트 창에 보인다 (선택)
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, statSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 const root = path.resolve(import.meta.dirname, '..')
@@ -29,6 +29,16 @@ function readCatalog() {
   return JSON.parse(readFileSync(catalogFile, 'utf8'))
 }
 
+/** 설치 전에 앱이 보여 줄 것 — 긴 설명(details) · 요청 권한 · 종류 · zip 크기(바이트). extension.json 에 있는 것만 */
+function extra(manifest, zipFile) {
+  return {
+    ...(typeof manifest.details === 'string' && manifest.details && { details: manifest.details }),
+    ...(Array.isArray(manifest.permissions) && manifest.permissions.length > 0 && { permissions: manifest.permissions }),
+    ...(typeof manifest.type === 'string' && { type: manifest.type }),
+    size: statSync(zipFile).size,
+  }
+}
+
 function release(folder, catalog) {
   const manifest = manifestOf(folder)
   const { id, name, description, version } = manifest
@@ -46,7 +56,7 @@ function release(folder, catalog) {
   const changesFile = path.join(extensionsDir, folder, 'changes.txt')
   const lines = existsSync(changesFile) ? readFileSync(changesFile, 'utf8').split('\n').map((line) => line.replace(/^[-*·]\s*/, '').trim()).filter(Boolean) : []
   const changes = lines.length > 0 ? lines : previous && previous.version === version ? previous.changes : undefined
-  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...(Array.isArray(changes) && changes.length > 0 && { changes }) }
+  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...extra(manifest, zipFile), ...(Array.isArray(changes) && changes.length > 0 && { changes }) }
   catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && !item.platform)), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
   console.log(`✓ ${id} ${version} → dist/${zipName}`)
 }
@@ -66,7 +76,7 @@ function releaseZip(file, platform, catalog) {
   for (const old of readdirSync(distDir)) if (old !== zipName && old.startsWith(prefix) && old.endsWith(suffix) && (platform || !/-[a-z0-9]+-[a-z0-9]+\.zip$/.test(old))) rmSync(path.join(distDir, old))
   const sha256 = createHash('sha256').update(readFileSync(target)).digest('hex')
   const changes = Array.isArray(manifest.changes) ? manifest.changes : undefined
-  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...(platform && { platform }), ...(changes?.length && { changes }) }
+  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...extra(manifest, target), ...(platform && { platform }), ...(changes?.length && { changes }) }
   catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && (item.platform ?? '') === (platform ?? ''))), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
   console.log(`✓ ${id} ${version}${platform ? ` (${platform})` : ''} → dist/${zipName}`)
 }

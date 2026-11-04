@@ -7,7 +7,7 @@ Lite Harness(데스크탑 앱)에 설치하는 확장 모음 저장소입니다.
 ```
 extensions/<폴더>/      확장 원본 — extension.json + 진입 파일(index.html · locale.json …)
 dist/<id>-<version>.zip  내보낸 zip (npm run release 가 만든다, 최신 버전만 남긴다)
-catalog.json             앱이 읽는 목록 — id · name · description · version · zip · sha256 · changes
+catalog.json             앱이 읽는 목록 — id · name · description · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
 scripts/release.mjs      내보내기 스크립트 (의존성 없음, 시스템 zip 사용)
 sources/                 빌드가 따로 필요한 확장의 원본 (catalog 에 없다 — 아래 참고)
 ```
