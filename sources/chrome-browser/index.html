@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Chrome in Lite Harness</title>
+<style>
+:root { --bg: #ffffff; --panel: #f5f6f7; --text: #0f1115; --text-2: #61666b; --text-3: #81858c; --border: rgba(0,0,0,.1); --ok: #2f9e5a; --ok-soft: #e7f6ec; --mute: #f2f3f5; --accent: #4176e6; }
+@media (prefers-color-scheme: dark) { :root { --bg: #151517; --panel: #1b1b1c; --text: #f9fafb; --text-2: #cfd3d6; --text-3: #9aa0a6; --border: rgba(255,255,255,.1); --ok: #4cc27a; --ok-soft: rgba(76,194,122,.14); --mute: #2c2c2e; --accent: #6b97f2; color-scheme: dark } }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.6 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif; }
+main { padding: 16px; display: grid; gap: 14px; }
+h1 { font-size: 16px; margin: 0; }
+.state { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--panel); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
+.state[data-on="1"] .dot { background: var(--ok); }
+.state small { margin-left: auto; color: var(--text-3); }
+ol, ul { margin: 0; padding-left: 18px; color: var(--text-2); display: grid; gap: 4px; }
+b { color: var(--text); }
+code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--mute); padding: 0 4px; border-radius: 4px; }
+button { justify-self: start; height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chrome in Lite Harness</h1>
+  <div class="state" id="state"><span class="dot"></span><span id="label">확인 중…</span><small id="when"></small></div>
+  <button type="button" id="refresh">다시 보기</button>
+  <section>
+    <b>쓰는 법</b>
+    <ol>
+      <li>대화에서 "이 페이지 열어서 로그인 버튼 눌러 봐" 처럼 시키면 AI 가 브라우저 도구를 씁니다.</li>
+      <li>처음 쓸 때 <b>전용 Chrome 창</b>이 따로 뜹니다(Windows 에서 Chrome 이 없으면 Edge). 로그인이 필요하면 그 창에서 직접 하세요 — 로그인은 남습니다.</li>
+      <li>10분 동안 안 쓰면 서버와 창을 내립니다. 다음에 쓰면 다시 뜹니다.</li>
+    </ol>
+  </section>
+  <section>
+    <b>막아 둔 것</b>
+    <ul>
+      <li>임의 코드 실행, 파일 올리기·끌어 놓기 같은 위험한 도구는 목록에서 빼고, 불러도 거절합니다.</li>
+      <li>평소 쓰는 Chrome 프로필은 건드리지 않습니다. 이 확장의 프로필은 확장 자료 폴더에만 있습니다.</li>
+      <li>오른쪽 패널의 "브라우저" 탭과는 따로입니다 — 페이지도 로그인도 서로 다릅니다.</li>
+    </ul>
+  </section>
+</main>
+<script>
+let next = 0
+const waiting = new Map()
+function call(method, params) {
+  const id = ++next
+  parent.postMessage({ litecode: 1, id, method, params }, '*')
+  return new Promise((resolve, reject) => waiting.set(id, { resolve, reject }))
+}
+addEventListener('message', ({ data }) => {
+  const w = data && data.litecode === 1 && waiting.get(data.id)
+  if (!w) return
+  waiting.delete(data.id)
+  data.ok ? w.resolve(data.result) : w.reject(new Error(data.error))
+})
+const ago = (at) => { const s = Math.round((Date.now() - at) / 1000); return s < 60 ? `${s}초 전` : `${Math.round(s / 60)}분 전` }
+async function refresh() {
+  const state = document.getElementById('state')
+  try {
+    const status = await call('mcp.status')
+    state.dataset.on = status.running ? '1' : '0'
+    document.getElementById('label').textContent = status.running ? '브라우저 서버가 돌고 있습니다' : '쉬는 중 — AI 가 브라우저 도구를 쓰면 뜹니다'
+    document.getElementById('when').textContent = status.lastCallAt ? `마지막 사용 ${ago(status.lastCallAt)}` : ''
+  } catch (error) {
+    state.dataset.on = '0'
+    document.getElementById('label').textContent = `상태를 읽지 못했습니다 (${error.message})`
+  }
+}
+document.getElementById('refresh').addEventListener('click', refresh)
+refresh()
+setInterval(() => { if (!document.hidden) refresh() }, 10000)
+</script>
+</body>
+</html>

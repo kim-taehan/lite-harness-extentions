@@ -72,6 +72,16 @@ git add -A && git commit -m "<id> 1.2.3" && git push
   ```
 
   catalog 항목에 `"platform": "darwin-arm64"` 가 붙고, 앱은 지금 PC 의 플랫폼(`darwin-arm64` · `darwin-x64` · `win32-x64` …)과 같은 항목만 보인다. 지금은 mac(Apple 칩)판만 있다.
+- **Chrome in Lite Harness** (`sources/chrome-browser/`) — AI 가 전용 Chrome 창을 조종하는 확장. 동봉 Playwright MCP(`@playwright/mcp` 0.0.83 + `playwright-core`, 순수 JS)를
+  레지스트리에서 고정 버전·sha512 로 받아 zip 에 넣는다(폐쇄망에서도 돈다). `server.mjs` 는 중계 MCP 서버다 — 위험한 도구(임의 코드·파일 올리기 등 13개)를
+  목록에서 빼고 불러도 거절하며, 남는 도구는 12개다. 플랫폼 구분 없음:
+
+  ```bash
+  node sources/chrome-browser/build.mjs          # build/chrome-browser.zip
+  npm run release -- --zip build/chrome-browser.zip
+  ```
+
+  Playwright MCP 버전을 올리면 도구 이름이 바뀔 수 있다 — `server.mjs` 의 `DENIED` 를 새 `tools/list` 와 다시 댄다.
 
 ## catalog 항목의 platform
 

@@ -2,6 +2,14 @@
   "version": 1,
   "extensions": [
     {
+      "id": "chrome-browser",
+      "name": "Chrome in Lite Harness",
+      "description": "AI 전용 Chrome 창 — 동봉한 Playwright MCP 서버로 페이지를 읽고 누릅니다",
+      "version": "1.0.0",
+      "zip": "dist/chrome-browser-1.0.0.zip",
+      "sha256": "c637d87ddaa3adf59ea6efc18c3f4813d8f80e219d7b38c32c064a552ec2f9be"
+    },
+    {
       "id": "ja-pack",
       "name": "日本語 언어 팩 (예제)",
       "description": "앱 화면 문구를 일본어로 바꾸는 예제 언어 팩",
