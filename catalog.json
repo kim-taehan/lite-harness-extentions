@@ -2,14 +2,6 @@
   "version": 1,
   "extensions": [
     {
-      "id": "code-map",
-      "name": "코드 지도",
-      "description": "프로젝트 구조를 층 단면도로 보고, 한 파일을 고치면 어디까지 번지는지 봅니다",
-      "version": "0.1.0",
-      "zip": "dist/code-map-0.1.0.zip",
-      "sha256": "88134965a6225402bdc70132f837b2af2adc19891719c5a510f8f69de4ea89af"
-    },
-    {
       "id": "ja-pack",
       "name": "日本語 언어 팩 (예제)",
       "description": "앱 화면 문구를 일본어로 바꾸는 예제 언어 팩",
