@@ -12,7 +12,9 @@ const root = path.resolve(import.meta.dirname, '..')
 const extensionsDir = path.join(root, 'extensions')
 const distDir = path.join(root, 'dist')
 const catalogFile = path.join(root, 'catalog.json')
+const categoriesFile = path.join(root, 'categories.json')
 const VERSION = /^\d+\.\d+\.\d+$/
+const CATEGORIES = ['game', 'dev-tool', 'locale']
 
 function folders() {
   return readdirSync(extensionsDir, { withFileTypes: true })
@@ -22,6 +24,12 @@ function folders() {
 
 function manifestOf(folder) {
   return JSON.parse(readFileSync(path.join(extensionsDir, folder, 'extension.json'), 'utf8'))
+}
+
+function categoryOf(id) {
+  const category = JSON.parse(readFileSync(categoriesFile, 'utf8'))[id]
+  if (!CATEGORIES.includes(category)) throw new Error(`categories.json 에 ${id} 의 분류(${CATEGORIES.join(' · ')})가 필요합니다`)
+  return category
 }
 
 function readCatalog() {
@@ -43,6 +51,7 @@ function release(folder, catalog) {
   const manifest = manifestOf(folder)
   const { id, name, description, version } = manifest
   if (!id || !VERSION.test(version ?? '')) throw new Error(`${folder}: extension.json 의 id·version(1.2.3) 이 필요합니다`)
+  const category = categoryOf(id)
   const zipName = `${id}-${version}.zip`
   const zipFile = path.join(distDir, zipName)
   rmSync(zipFile, { force: true })
@@ -56,7 +65,7 @@ function release(folder, catalog) {
   const changesFile = path.join(extensionsDir, folder, 'changes.txt')
   const lines = existsSync(changesFile) ? readFileSync(changesFile, 'utf8').split('\n').map((line) => line.replace(/^[-*·]\s*/, '').trim()).filter(Boolean) : []
   const changes = lines.length > 0 ? lines : previous && previous.version === version ? previous.changes : undefined
-  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...extra(manifest, zipFile), ...(Array.isArray(changes) && changes.length > 0 && { changes }) }
+  const entry = { id, name, description, category, version, zip: `dist/${zipName}`, sha256, ...extra(manifest, zipFile), ...(Array.isArray(changes) && changes.length > 0 && { changes }) }
   catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && !item.platform)), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
   console.log(`✓ ${id} ${version} → dist/${zipName}`)
 }
@@ -68,6 +77,7 @@ function releaseZip(file, platform, catalog) {
   const { id, name, description, version } = manifest
   if (!id || !VERSION.test(version ?? '')) throw new Error(`${file}: zip 안 extension.json 의 id·version 이 필요합니다`)
   if (platform !== undefined && !/^[a-z0-9]+-[a-z0-9]+$/.test(platform)) throw new Error(`--platform 은 darwin-arm64 · win32-x64 꼴입니다`)
+  const category = categoryOf(id)
   const zipName = `${id}-${version}${platform ? `-${platform}` : ''}.zip`
   const target = path.join(distDir, zipName)
   writeFileSync(target, readFileSync(file))
@@ -76,7 +86,7 @@ function releaseZip(file, platform, catalog) {
   for (const old of readdirSync(distDir)) if (old !== zipName && old.startsWith(prefix) && old.endsWith(suffix) && (platform || !/-[a-z0-9]+-[a-z0-9]+\.zip$/.test(old))) rmSync(path.join(distDir, old))
   const sha256 = createHash('sha256').update(readFileSync(target)).digest('hex')
   const changes = Array.isArray(manifest.changes) ? manifest.changes : undefined
-  const entry = { id, name, description, version, zip: `dist/${zipName}`, sha256, ...extra(manifest, target), ...(platform && { platform }), ...(changes?.length && { changes }) }
+  const entry = { id, name, description, category, version, zip: `dist/${zipName}`, sha256, ...extra(manifest, target), ...(platform && { platform }), ...(changes?.length && { changes }) }
   catalog.extensions = [...catalog.extensions.filter((item) => !(item.id === id && (item.platform ?? '') === (platform ?? ''))), entry].sort((a, b) => (a.id === b.id ? ((a.platform ?? '') < (b.platform ?? '') ? -1 : 1) : a.id < b.id ? -1 : 1))
   console.log(`✓ ${id} ${version}${platform ? ` (${platform})` : ''} → dist/${zipName}`)
 }

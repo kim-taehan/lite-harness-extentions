@@ -1,0 +1,11 @@
+{
+  "chrome-browser": "dev-tool",
+  "ja-pack": "locale",
+  "ladder-demo": "game",
+  "sonarqube": "dev-tool",
+  "sql-tuning": "dev-tool",
+  "tetris-demo": "game",
+  "token-pet": "game",
+  "vi-pack": "locale",
+  "zh-cn-pack": "locale"
+}

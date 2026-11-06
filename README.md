@@ -1,13 +1,21 @@
 # lite-harness-extentions
 
-Lite Harness(데스크탑 앱)에 설치하는 확장 모음 저장소입니다. 앱의 **설정 › 기능 › 확장 저장소(베타)** 를 켜면 앱이 이 저장소의 `catalog.json` 을 읽어 [확장 둘러보기] 에 목록을 보이고, 누르면 설치 · 새 버전이 오면 업데이트합니다. zip 파일로 직접 설치하는 길(설정 › 기능 › 확장 추가 (zip))도 그대로 있습니다.
+Lite Harness 배포 저장소입니다. 두 가지를 내보냅니다.
+
+| 무엇 | 어디 |
+|---|---|
+| 앱 설치 파일 (mac arm64 · mac x64 · win x64) | GitHub Releases 의 `app-v<버전>` |
+| 확장 | `catalog.json` + `dist/` (아래) |
+
+Lite Harness(데스크탑 앱)에 설치하는 확장도 이 저장소에서 받습니다. 앱의 **설정 › 기능 › 확장 저장소(베타)** 를 켜면 앱이 이 저장소의 `catalog.json` 을 읽어 [확장 둘러보기] 에 목록을 보이고, 누르면 설치 · 새 버전이 오면 업데이트합니다. zip 파일로 직접 설치하는 길(설정 › 기능 › 확장 추가 (zip))도 그대로 있습니다.
 
 ## 구조
 
 ```
 extensions/<폴더>/      확장 원본 — extension.json + 진입 파일(index.html · locale.json …)
 dist/<id>-<version>.zip  내보낸 zip (npm run release 가 만든다, 최신 버전만 남긴다)
-catalog.json             앱이 읽는 목록 — id · name · description · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
+categories.json          확장 id → 분류(game · dev-tool · locale). release 가 catalog 의 category 로 싣는다
+catalog.json             앱이 읽는 목록 — id · name · description · category · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
 scripts/release.mjs      내보내기 스크립트 (의존성 없음, 시스템 zip 사용)
 sources/                 빌드가 따로 필요한 확장의 원본 (catalog 에 없다 — 아래 참고)
 ```
@@ -82,6 +90,11 @@ git add -A && git commit -m "<id> 1.2.3" && git push
   ```
 
   Playwright MCP 버전을 올리면 도구 이름이 바뀔 수 있다 — `server.mjs` 의 `DENIED` 를 새 `tools/list` 와 다시 댄다.
+
+## catalog 항목의 category
+
+분류는 `categories.json` 에 확장 id 마다 하나 적는다. 값은 `game` · `dev-tool` · `locale` 중 하나이고, 없거나 다른 값이면 release 가 멈춘다. 새 확장을 올리기 전에 여기에 먼저 한 줄 더한다.
+`extension.json` 에는 적지 않는다(앱이 모르는 필드로 설치를 거절한다). 폴더도 분류별로 나누지 않는다 — `extensions/<id>/` 하나로 둔다.
 
 ## catalog 항목의 platform
 
