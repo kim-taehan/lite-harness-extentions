@@ -20,9 +20,11 @@ lite-harness-desktop 앱에 까는 플러그인의 원본과 카탈로그.
 가이드와 desktop 코드가 어긋나면 desktop 코드가 정본이다(`docs/architecture.html` 의 "정본" 표).
 그때는 코드를 따르고 가이드도 같은 PR 에서 고친다.
 규칙은 가이드에만 적고, 여기에는 링크만 둔다.
+훅(`.claude/settings.json`)이 main 직접 push, `catalog.json`·`dist/` 손편집, 테스트 없는 머지를 막고,
+원본만 바뀌고 version 이 그대로인 push 에는 경고한다.
 
 ## 명령
-- `npm test` — 플러그인 테스트
+- `npm test` — 플러그인 테스트 + catalog ↔ dist 정합 (머지 조건)
 - `npm run release <폴더…>` · `--all` · `--zip <파일>` — dist 와 catalog.json 갱신 (자세한 건 `publish.html`)
 
 ## 디렉터리
