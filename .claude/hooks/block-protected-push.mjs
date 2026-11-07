@@ -4,7 +4,7 @@ import { readHookInput, block, git } from './lib.mjs'
 const PROTECTED = ['main']
 const { command, cwd } = await readHookInput()
 
-const push = command.match(/\bgit(?:\s+-[Cc]\s+\S+)*\s+push\b([^;&|]*)/)
+const push = command.match(/(?:^|[;&|\n])\s*(?:\S*\/)?git(?:\s+-[Cc]\s+\S+)*\s+push\b([^;&|\n]*)/)
 if (!push) process.exit(0)
 
 const args = push[1].trim().split(/\s+/).filter((a) => a && !a.startsWith('-'))

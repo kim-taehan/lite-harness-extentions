@@ -5,7 +5,7 @@ import { spawnSync, execFileSync } from 'node:child_process'
 import { readHookInput, block, git } from './lib.mjs'
 
 const { command, cwd } = await readHookInput()
-const merge = command.match(/\bgh\s+pr\s+merge\b([^;&|]*)/)
+const merge = command.match(/(?:^|[;&|\n])\s*(?:\S*\/)?gh\s+pr\s+merge\b([^;&|\n]*)/)
 if (!merge) process.exit(0)
 
 const prArg = merge[1].trim().split(/\s+/).find((a) => a && !a.startsWith('-'))

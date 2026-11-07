@@ -4,7 +4,7 @@
 import { readHookInput, git } from './lib.mjs'
 
 const { command, cwd } = await readHookInput()
-if (!/\bgit(?:\s+-[Cc]\s+\S+)*\s+push\b/.test(command)) process.exit(0)
+if (!/(?:^|[;&|\n])\s*(?:\S*\/)?git(?:\s+-[Cc]\s+\S+)*\s+push\b/.test(command)) process.exit(0)
 
 const catalogAt = (ref) => {
   try { return JSON.parse(git(cwd, 'show', `${ref}:catalog.json`)).extensions } catch { return [] }
