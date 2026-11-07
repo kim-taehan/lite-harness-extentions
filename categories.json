@@ -1,7 +1,10 @@
 {
   "chrome-browser": "dev-tool",
+  "csharp-grammar": "dev-tool",
   "ja-pack": "locale",
+  "kotlin-grammar": "dev-tool",
   "ladder-demo": "game",
+  "rust-grammar": "dev-tool",
   "sonarqube": "dev-tool",
   "sql-tuning": "dev-tool",
   "tetris-demo": "game",

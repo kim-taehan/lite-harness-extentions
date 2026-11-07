@@ -8,6 +8,9 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
+    "code-grammar-c-sharp": "npm:tree-sitter-c-sharp@0.23.5",
+    "code-grammar-kotlin": "npm:@tree-sitter-grammars/tree-sitter-kotlin@1.1.0",
+    "code-grammar-rust": "npm:tree-sitter-rust@0.24.0",
     "esbuild": "0.28.2",
     "oracledb": "26.0.0",
     "pg": "8.23.1",

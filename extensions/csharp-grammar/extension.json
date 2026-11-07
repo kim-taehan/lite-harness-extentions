@@ -1,0 +1,31 @@
+{
+  "id": "csharp-grammar",
+  "name": "C# 문법 팩",
+  "description": "파일 개요가 C#(.cs) 파일의 네임스페이스 · 클래스 · 인터페이스 · 메서드를 읽게 합니다",
+  "details": "쓰는 법\n설치하고 켜 두면 오른쪽 패널에서 C# 파일을 열 때 경로 줄에 [개요] 가 생깁니다. 설정 > 기능 의 코드 탐색이 켜져 있어야 합니다.\n끄거나 지우면 [개요] 가 다시 사라집니다.\n\n보이는 것\nnamespace · class · interface · struct · enum · record · delegate · 생성자 · 메서드 · 로컬 함수.\n\n문법만 담은 플러그인입니다 — 화면도 실행하는 코드도 없고, 파일은 이 PC 안에서 읽습니다.\n문법: tree-sitter-c-sharp 0.23.5 (MIT, LICENSE 동봉)",
+  "version": "0.1.0",
+  "type": "grammar",
+  "grammars": [
+    {
+      "id": "c-sharp",
+      "label": "C#",
+      "extensions": [
+        "cs"
+      ],
+      "wasm": "tree-sitter-c_sharp.wasm",
+      "definitions": {
+        "namespace_declaration": "namespace",
+        "file_scoped_namespace_declaration": "namespace",
+        "class_declaration": "class",
+        "interface_declaration": "interface",
+        "struct_declaration": "struct",
+        "enum_declaration": "enum",
+        "record_declaration": "record",
+        "delegate_declaration": "type",
+        "constructor_declaration": "constructor",
+        "method_declaration": "method",
+        "local_function_statement": "function"
+      }
+    }
+  ]
+}

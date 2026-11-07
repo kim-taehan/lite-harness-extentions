@@ -17,6 +17,7 @@ extensions/<id>/build.mjs 빌드가 필요한 확장만 — build/<id>[-<platfor
 dist/<id>-<version>.zip  내보낸 zip (npm run release 가 만든다, 최신 버전만 남긴다)
 categories.json          확장 id → 분류(game · dev-tool · locale). release 가 catalog 의 category 로 싣는다
 catalog.json             앱이 읽는 목록 — id · name · description · category · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
+scripts/grammar-pack.mjs 문법 팩 build.mjs 가 같이 쓰는 묶기
 scripts/release.mjs      내보내기 스크립트 (시스템 zip 사용, build.mjs 가 있으면 먼저 돌린다)
 package.json             build.mjs 가 쓰는 의존성 (esbuild · MCP SDK · DB 드라이버 · playwright-core) — 버전 고정. 빌드 전에 npm ci
 ```
@@ -80,10 +81,12 @@ git add -A && git commit -m "<id> 1.2.3" && git push
 | `sql-tuning` | MCP 서버를 드라이버(oracledb · pg)째 한 파일로 묶는다 | `npm run release sql-tuning` |
 | `ui-test` | MCP 서버를 묶고 playwright-core 를 옆에 싣는다 (브라우저는 PC 의 Chrome · Edge) | `npm run release ui-test` |
 | `chrome-browser` | Playwright MCP 를 레지스트리에서 고정 버전 · sha512 로 받아 싣는다 | `npm run release chrome-browser` |
+| `rust-grammar` · `csharp-grammar` · `kotlin-grammar` | 문법 패키지(package.json 의 별칭 `code-grammar-*`)에서 wasm 을 꺼내 extension.json · LICENSE 와 묶는다 (`scripts/grammar-pack.mjs`) | `npm run release rust-grammar` |
 | `sonarqube` | 분석기(Java 런타임 + SonarScanner, 풀어서 약 100MB)를 플랫폼별로 받아 싣는다 | `npm run release -- sonarqube --platform darwin-arm64` |
 
 - sql-tuning 에 사내 SQL 표준을 넣으려면 `node extensions/sql-tuning/build.mjs --standard <표준.md>` 로 묶고 `npm run release -- --zip build/sql-tuning.zip`.
 - sonarqube 는 플랫폼 전용이라 `--platform`(`darwin-arm64` · `darwin-x64` · `win32-x64`)이 꼭 있어야 하고, `--all` 은 건너뛴다. 분석기는 `extensions/sonarqube/fetch-runtime.mjs` 가 망 밖에서 버전 · sha256 고정으로 받아 `build/vendor/` 에 둔다(git 에는 넣지 않는다, 받으면 수 GB). 지금은 mac(Apple 칩)판만 검증됐다.
+- 문법 팩을 더할 때는 폴더 하나(extension.json · LICENSE · 다른 팩과 같은 한 줄짜리 build.mjs) + `npm i -D -E code-grammar-<언어>@npm:<문법 패키지>@<버전>` + categories.json 한 줄. 앱에 이미 있는 언어의 확장자는 앱이 설치를 거절한다.
 - chrome-browser 의 Playwright MCP 버전을 올리면 도구 이름이 바뀔 수 있다 — `server.mjs` 의 `DENIED` 를 새 `tools/list` 와 다시 댄다.
 - 빌드가 필요한 확장의 테스트는 `extensions/<id>/tests/` 에 있다. `npm test`(vitest) 로 돌리고, zip 에는 들어가지 않는다(build.mjs 가 고른 파일만 싣는다).
 - release 는 대상 전부의 분류를 먼저 확인하고 나서 빌드한다. 하나라도 빠지면 dist 와 catalog 를 건드리지 않고 멈춘다.

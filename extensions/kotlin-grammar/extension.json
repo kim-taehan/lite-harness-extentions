@@ -1,0 +1,31 @@
+{
+  "id": "kotlin-grammar",
+  "name": "Kotlin 문법 팩",
+  "description": "파일 개요가 Kotlin(.kt · .kts) 파일의 클래스 · 오브젝트 · 함수를 읽게 합니다",
+  "details": "쓰는 법\n설치하고 켜 두면 오른쪽 패널에서 Kotlin 파일을 열 때 경로 줄에 [개요] 가 생깁니다. 설정 > 기능 의 코드 탐색이 켜져 있어야 합니다.\n끄거나 지우면 [개요] 가 다시 사라집니다.\n\n보이는 것\nclass · interface · enum class · data class · object · fun · typealias. 클래스 안의 fun 은 메서드로 보입니다(interface 도 클래스 뱃지로 보입니다).\n\n문법만 담은 플러그인입니다 — 화면도 실행하는 코드도 없고, 파일은 이 PC 안에서 읽습니다.\n문법: @tree-sitter-grammars/tree-sitter-kotlin 1.1.0 (MIT, LICENSE 동봉)",
+  "version": "0.1.0",
+  "type": "grammar",
+  "grammars": [
+    {
+      "id": "kotlin",
+      "label": "Kotlin",
+      "extensions": [
+        "kt",
+        "kts"
+      ],
+      "wasm": "tree-sitter-kotlin.wasm",
+      "definitions": {
+        "class_declaration": "class",
+        "object_declaration": "class",
+        "function_declaration": "function",
+        "type_alias": {
+          "field": "type",
+          "kinds": {
+            "*": "type"
+          },
+          "name": "type"
+        }
+      }
+    }
+  ]
+}
