@@ -59,7 +59,7 @@ If there is a company git server (GitLab etc.), you can mirror this repository t
 plugins/<id>/            Extension source — extension.json (plugin.json for plugins) + entry file (index.html · locale.json …). One folder per id, no category folders
 plugins/<id>/build.mjs   Only for extensions that need a build — produces build/<id>[-<platform>].zip (see below)
 dist/<id>-<version>.zip  Published zip (made by npm run release; only the latest version is kept)
-categories.json          Extension id → category (game · dev-tool · locale). release writes it into the catalog's category
+categories.json          Extension id → category (game · dev-tool · locale), or unlisted to take it off the list. release writes it into the catalog's category
 catalog.json             The list the app reads — id · name · description · category · details · permissions · type · size · version · zip · sha256 · changes (details · permissions · size are shown before install)
 scripts/grammar-pack.mjs Packing shared by the grammar packs' build.mjs
 scripts/release.mjs      Publish script (uses the system zip; runs build.mjs first if present)
@@ -72,8 +72,8 @@ Shape of `catalog.json`:
 {
   "version": 1,
   "extensions": [
-    { "id": "tetris-demo", "name": "테트리스", "description": "…", "version": "1.0.0",
-      "zip": "dist/tetris-demo-1.0.0.zip", "sha256": "…", "changes": ["one line per change", "…"] }
+    { "id": "token-pet", "name": "빛톨 키우기", "description": "…", "version": "0.1.1",
+      "zip": "dist/token-pet-0.1.1.zip", "sha256": "…", "changes": ["one line per change", "…"] }
   ]
 }
 ```
@@ -121,6 +121,8 @@ If a folder has a `build.mjs`, `npm run release <id>` runs it first and publishe
 
 Write one category per extension id in `categories.json`. The value is one of `game` · `dev-tool` · `locale`; if it's missing or anything else, release stops. Add the line here before publishing a new extension.
 Don't put it in `extension.json` (the app rejects the install over an unknown field). Folders aren't split by category either — keep one `plugins/<id>/`.
+
+**Taking an extension off the list without deleting its source** — write `unlisted` instead of a category (e.g. `"vi-pack": "unlisted"`). Every release run then removes its catalog entry and dist zips (platform zips too) and keeps `plugins/<id>/` as is; `--all` skips it, and naming it (`npm run release vi-pack`) only takes it off the list. To list it again, write a category back and release it. PCs that already installed it keep it — the app never removes an extension that disappeared from the catalog.
 
 ### `platform` in catalog entries
 

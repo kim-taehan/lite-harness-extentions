@@ -3,12 +3,11 @@
   "csharp-grammar": "dev-tool",
   "ja-pack": "locale",
   "kotlin-grammar": "dev-tool",
-  "ladder-demo": "game",
   "rust-grammar": "dev-tool",
   "sonarqube": "dev-tool",
   "sql-tuning": "dev-tool",
-  "tetris-demo": "game",
   "token-pet": "game",
   "ui-test": "dev-tool",
+  "vi-pack": "unlisted",
   "zh-cn-pack": "locale"
 }

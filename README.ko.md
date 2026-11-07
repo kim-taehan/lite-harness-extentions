@@ -59,7 +59,7 @@ Lite Harness(데스크탑 앱)에 설치하는 확장도 이 저장소에서 받
 plugins/<id>/            확장 원본 — extension.json(플러그인은 plugin.json) + 진입 파일(index.html · locale.json …). 분류 폴더 없이 id 하나로
 plugins/<id>/build.mjs   빌드가 필요한 확장만 — build/<id>[-<platform>].zip 을 만든다 (아래 참고)
 dist/<id>-<version>.zip  내보낸 zip (npm run release 가 만든다, 최신 버전만 남긴다)
-categories.json          확장 id → 분류(game · dev-tool · locale). release 가 catalog 의 category 로 싣는다
+categories.json          확장 id → 분류(game · dev-tool · locale), 또는 목록에서 내릴 때 unlisted. release 가 catalog 의 category 로 싣는다
 catalog.json             앱이 읽는 목록 — id · name · description · category · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
 scripts/grammar-pack.mjs 문법 팩 build.mjs 가 같이 쓰는 묶기
 scripts/release.mjs      내보내기 스크립트 (시스템 zip 사용, build.mjs 가 있으면 먼저 돌린다)
@@ -72,8 +72,8 @@ package.json             build.mjs 가 쓰는 의존성 (esbuild · MCP SDK · D
 {
   "version": 1,
   "extensions": [
-    { "id": "tetris-demo", "name": "테트리스", "description": "…", "version": "1.0.0",
-      "zip": "dist/tetris-demo-1.0.0.zip", "sha256": "…", "changes": ["바뀐 것 한 줄", "…"] }
+    { "id": "token-pet", "name": "빛톨 키우기", "description": "…", "version": "0.1.1",
+      "zip": "dist/token-pet-0.1.1.zip", "sha256": "…", "changes": ["바뀐 것 한 줄", "…"] }
   ]
 }
 ```
@@ -121,6 +121,8 @@ git add -A && git commit -m "<id> 1.2.3" && git push
 
 분류는 `categories.json` 에 확장 id 마다 하나 적는다. 값은 `game` · `dev-tool` · `locale` 중 하나이고, 없거나 다른 값이면 release 가 멈춘다. 새 확장을 올리기 전에 여기에 먼저 한 줄 더한다.
 `extension.json` 에는 적지 않는다(앱이 모르는 필드로 설치를 거절한다). 폴더도 분류별로 나누지 않는다 — `plugins/<id>/` 하나로 둔다.
+
+**원본은 두고 목록에서만 내리기** — 분류 대신 `unlisted` 를 적는다(예: `"vi-pack": "unlisted"`). 그러면 release 를 돌릴 때마다 그 catalog 항목과 dist zip(플랫폼 zip 포함)을 지우고 `plugins/<id>/` 는 그대로 둔다. `--all` 은 건너뛰고, 이름으로 부르면(`npm run release vi-pack`) 목록에서 내리기만 한다. 다시 올리려면 분류를 적고 release 한다. 이미 설치한 PC 에서는 그대로 남는다 — 앱은 catalog 에서 빠진 확장을 지우지 않는다.
 
 ### catalog 항목의 platform
 
