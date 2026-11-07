@@ -4,6 +4,8 @@
 // 앱(Lite Harness)은 catalog.json 을 읽고, 받은 zip 의 sha256 이 같을 때만 설치한다. 의존성 없음 — 시스템 zip 을 쓴다.
 // 옛 zip 은 지운다(같은 id 의 dist/<id>-*.zip 중 새 버전만 남긴다) — 저장소에 옛 버전이 쌓이지 않게. 되돌리기는 git 기록으로.
 // extension.json 에 "changes": ["바뀐 것", …] 를 적으면 catalog 에 실려 앱의 업데이트 창에 보인다 (선택)
+// 목록에서 내리기 — categories.json 에 분류 대신 "unlisted" 를 적으면 원본(plugins/<폴더>/)은 두고, release 를 돌릴 때마다 catalog 항목과 dist zip 을 지운다.
+// --all 은 건너뛰고, 이름으로 불러도 묶지 않는다. 다시 올리려면 분류를 적고 release 한다
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -16,6 +18,7 @@ const catalogFile = path.join(root, 'catalog.json')
 const categoriesFile = path.join(root, 'categories.json')
 const VERSION = /^\d+\.\d+\.\d+$/
 const CATEGORIES = ['game', 'dev-tool', 'locale']
+const UNLISTED = 'unlisted'
 const MANIFESTS = ['extension.json', 'plugin.json']
 
 const manifestFile = (folder) => MANIFESTS.map((name) => path.join(extensionsDir, folder, name)).find((file) => existsSync(file))
@@ -37,8 +40,12 @@ function zipManifest(file) {
   return JSON.parse(execFileSync('unzip', ['-p', file, name], { encoding: 'utf8' }))
 }
 
+const categories = () => JSON.parse(readFileSync(categoriesFile, 'utf8'))
+const isUnlisted = (id) => categories()[id] === UNLISTED
+
 function categoryOf(id) {
-  const category = JSON.parse(readFileSync(categoriesFile, 'utf8'))[id]
+  const category = categories()[id]
+  if (category === UNLISTED) throw new Error(`${id} 는 목록에서 내린 플러그인입니다 (categories.json 의 "${UNLISTED}") — 다시 올리려면 분류를 적습니다`)
   if (!CATEGORIES.includes(category)) throw new Error(`categories.json 에 ${id} 의 분류(${CATEGORIES.join(' · ')})가 필요합니다`)
   return category
 }
@@ -108,6 +115,21 @@ function releaseZip(file, platform, catalog) {
   console.log(`✓ ${id} ${version}${platform ? ` (${platform})` : ''} → dist/${zipName}`)
 }
 
+/** 목록에서 내린 플러그인의 catalog 항목과 dist zip(플랫폼 zip 포함)을 지우고 catalog 를 쓴다 — 검사가 다 끝난 뒤에만 부른다 */
+function finish(catalog) {
+  for (const [id, category] of Object.entries(categories())) {
+    if (category !== UNLISTED) continue
+    const zip = new RegExp(`^${id.replace(/[-]/g, '\\-')}-\\d+\\.\\d+\\.\\d+(-[a-z0-9]+-[a-z0-9]+)?\\.zip$`)
+    const zips = readdirSync(distDir).filter((file) => zip.test(file))
+    const listed = catalog.extensions.some((entry) => entry.id === id)
+    if (zips.length === 0 && !listed) continue
+    for (const file of zips) rmSync(path.join(distDir, file))
+    catalog.extensions = catalog.extensions.filter((entry) => entry.id !== id)
+    console.log(`- ${id} 목록에서 내림 (${UNLISTED})`)
+  }
+  writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`)
+}
+
 const args = process.argv.slice(2)
 if (args.length === 0) {
   console.error('쓰는 법: npm run release <id 또는 폴더> [--platform darwin-arm64] · npm run release -- --all · npm run release -- --zip <묶은.zip> [--platform darwin-arm64]')
@@ -120,18 +142,21 @@ const platform = valueOf('--platform')
 const zip = valueOf('--zip')
 if (zip) {
   releaseZip(path.resolve(zip), platform, catalog)
-  writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`)
+  finish(catalog)
   process.exit(0)
 }
 const all = folders()
+const unlisted = all.filter((folder) => isUnlisted(manifestOf(folder).id))
 const named = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--platform')
 const platformOnly = (folder) => catalog.extensions.some((entry) => entry.id === manifestOf(folder).id && entry.platform)
 const skipped = args.includes('--all') && !platform ? all.filter(platformOnly) : []
 for (const folder of skipped) console.log(`- ${folder} 건너뜀 (플랫폼 전용 — --platform 으로 따로 올린다)`)
-const targets = args.includes('--all') ? all.filter((folder) => !skipped.includes(folder)) : named.map((arg) => all.find((folder) => folder === arg || manifestOf(folder).id === arg) ?? arg)
+const chosen = args.includes('--all') ? all.filter((folder) => !skipped.includes(folder)) : named.map((arg) => all.find((folder) => folder === arg || manifestOf(folder).id === arg) ?? arg)
+for (const folder of chosen.filter((folder) => unlisted.includes(folder))) console.log(`- ${folder} 건너뜀 (${UNLISTED} — 목록에서 내린 플러그인)`)
+const targets = chosen.filter((folder) => !unlisted.includes(folder))
 for (const folder of targets) {
   if (!all.includes(folder)) throw new Error(`plugins/${folder} 가 없습니다`)
   categoryOf(manifestOf(folder).id)
 }
 for (const folder of targets) release(folder, platform, catalog)
-writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`)
+finish(catalog)
