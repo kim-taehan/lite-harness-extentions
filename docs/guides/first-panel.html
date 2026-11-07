@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>첫 패널 플러그인 만들기 · Lite Harness 플러그인 가이드</title>
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="../"><span class="brand-mark">◆</span>Lite Harness 플러그인</a>
+    <nav>
+      <a href="../#guides">가이드</a>
+      <a href="../architecture.html">구조</a>
+      <a href="../#reference">참고</a>
+      <a class="wide" href="https://github.com/kim-taehan/lite-harness-plugins">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="guide-head">
+  <div class="wrap">
+    <div class="crumbs"><a href="../">가이드</a> › 패널</div>
+    <h1>첫 패널 플러그인 만들기</h1>
+    <p class="lead">오른쪽 패널에 탭 하나를 더하는 가장 작은 플러그인을 만듭니다. 파일은 둘, 빌드는 없습니다.</p>
+    <div class="meta"><span>약 15분</span><span>권한: project · chat</span></div>
+  </div>
+</div>
+
+<div class="wrap layout">
+<article>
+
+<h2 id="what">만들 것</h2>
+<p><strong>메모장</strong> 패널을 만듭니다. 오른쪽 패널의 <code>+</code> 메뉴에서 열면</p>
+<ul>
+  <li>지금 프로젝트 이름을 보여 주고 (<code>project.info</code>)</li>
+  <li>적은 메모를 플러그인 저장소에 남겨 다시 열어도 그대로 있고 (<code>storage.get</code> · <code>storage.set</code>)</li>
+  <li>[AI 에게 보내기] 를 누르면 그 메모로 새 대화를 엽니다 (<code>chat.compose</code>).</li>
+</ul>
+
+<h2 id="need">준비물</h2>
+<div class="box">
+  <ul>
+    <li>Lite Harness 앱 (<a href="https://github.com/kim-taehan/lite-harness-plugins/releases">Releases</a> 의 <code>app-v&lt;버전&gt;</code>)</li>
+    <li>텍스트 편집기, 그리고 <code>zip</code> 명령 (macOS 기본 · Windows 는 탐색기의 "압축(ZIP) 폴더" 로도 됩니다)</li>
+    <li>HTML · JavaScript 기초</li>
+  </ul>
+</div>
+
+<h2 id="how">플러그인은 어떻게 도나</h2>
+<p>패널 플러그인은 zip 하나입니다. 맨 위에 <code>plugin.json</code>(manifest)이 있고, 그것이 가리키는 <strong>한 파일짜리 HTML</strong> 이 오른쪽 패널 탭이 됩니다.</p>
+<ul>
+  <li>HTML 은 <strong>sandbox iframe</strong> 에서 돕니다. 외부 스크립트 · 스타일 · 이미지 · 글꼴과 <code>fetch</code> 는 CSP 로 막힙니다 — 스크립트와 스타일은 HTML 안에 인라인으로 넣습니다. 같은 zip 의 다른 파일도 패널에서 불러올 수 없습니다.</li>
+  <li>앱에 무언가를 부탁하는 길은 <code>parent.postMessage</code> 하나(<strong>앱 통로</strong>)입니다. 앱은 메시지가 어느 iframe 에서 왔는지로 플러그인을 알아보고, manifest 의 <code>permissions</code> 에 적힌 것만 들어 줍니다.</li>
+</ul>
+
+<h2 id="manifest"><span class="step"></span>폴더와 plugin.json</h2>
+<p>저장소의 <code>plugins/</code> 아래에 플러그인 id 와 같은 이름으로 폴더를 만듭니다. (저장소에 올리지 않을 거면 아무 폴더여도 됩니다.)</p>
+<div class="code"><div class="file">plugins/hello-panel/plugin.json</div><pre><code>{
+  "id": "hello-panel",
+  "name": "메모장",
+  "description": "프로젝트 이름을 보여 주고, 적은 메모를 남기고, AI 에게 보내는 예제 패널",
+  "details": "오른쪽 패널의 + 메뉴에서 메모장을 엽니다.\n적은 메모는 이 PC 의 플러그인 저장소에만 남습니다.",
+  "version": "0.1.0",
+  "entry": "index.html",
+  "permissions": ["project", "chat"]
+}</code></pre></div>
+
+<table>
+  <tr><th>필드</th><th>규칙</th></tr>
+  <tr><td><code>id</code></td><td>소문자 · 숫자 · <code>-</code>, 3~40자. 폴더 이름 · 설정 키로 쓰입니다. 앱 기능 이름과 겹치면 거절</td></tr>
+  <tr><td><code>name</code> · <code>description</code></td><td>카드 제목(80자)과 한 줄 설명(300자)</td></tr>
+  <tr><td><code>details</code></td><td>선택. 카드를 펼치면 보이는 긴 설명(2000자, 글만 — HTML 아님). 켜는 법 · 쓰는 법은 여기에</td></tr>
+  <tr><td><code>version</code></td><td>semver (<code>0.1.0</code>). 앱은 더 높은 버전만 업데이트로 받습니다</td></tr>
+  <tr><td><code>entry</code></td><td>패널 HTML (<code>.html</code> · <code>.htm</code>), manifest 기준 상대 경로</td></tr>
+  <tr><td><code>permissions</code></td><td>선택. 아래 <a href="#permissions">권한 표</a>의 값만</td></tr>
+  <tr><td><code>litecode</code></td><td>선택. 필요한 최소 앱 버전 — 낮은 앱은 설치를 거절합니다</td></tr>
+</table>
+<div class="note"><p><strong>모르는 필드는 설치 거절입니다.</strong> <code>permisions</code> 같은 오타가 조용히 넘어가 권한이 빠진 채 설치되지 않게 하려는 것입니다. 메모용 필드를 manifest 에 넣지 마세요. 옛 이름 <code>extension.json</code> 도 읽지만 새 플러그인은 <code>plugin.json</code> 으로 씁니다.</p></div>
+
+<h2 id="html"><span class="step"></span>패널 HTML</h2>
+<p>한 파일 안에 화면 · 스타일 · 스크립트를 다 넣습니다. 맨 위 <code>call()</code> 이 앱 통로입니다 — 요청에 번호를 붙여 보내고, 같은 번호의 답을 기다립니다.</p>
+<div class="code"><div class="file">plugins/hello-panel/index.html</div><pre><code>&lt;!doctype html&gt;
+&lt;meta charset="utf-8"&gt;
+&lt;style&gt;
+  :root { color-scheme: light dark; font: 14px/1.5 system-ui, sans-serif; }
+  body { margin: 16px; display: grid; gap: 10px; }
+  textarea { width: 100%; min-height: 160px; box-sizing: border-box; font: inherit; }
+  .muted { opacity: .7; }
+&lt;/style&gt;
+&lt;h3 id="project" class="muted"&gt;프로젝트 …&lt;/h3&gt;
+&lt;textarea id="memo" placeholder="메모를 적으세요"&gt;&lt;/textarea&gt;
+&lt;div&gt;
+  &lt;button id="send"&gt;AI 에게 보내기&lt;/button&gt;
+  &lt;span id="status" class="muted"&gt;&lt;/span&gt;
+&lt;/div&gt;
+&lt;script&gt;
+// ── 앱 통로 ──
+let next = 0
+const waiting = new Map()
+function call(method, params) {
+  const id = ++next
+  parent.postMessage({ litecode: 1, id, method, params }, '*')
+  return new Promise((resolve, reject) =&gt; waiting.set(id, { resolve, reject }))
+}
+addEventListener('message', ({ data }) =&gt; {
+  const w = data &amp;&amp; data.litecode === 1 &amp;&amp; waiting.get(data.id)
+  if (!w) return
+  waiting.delete(data.id)
+  data.ok ? w.resolve(data.result) : w.reject(new Error(data.error))
+})
+
+// ── 화면 ──
+const memo = document.getElementById('memo')
+const status = document.getElementById('status')
+
+call('project.info')
+  .then(({ name }) =&gt; (document.getElementById('project').textContent = name))
+  .catch(() =&gt; (document.getElementById('project').textContent = '열린 프로젝트 없음'))
+
+call('storage.get', { key: 'memo' }).then((saved) =&gt; (memo.value = saved ?? ''))
+
+let timer
+memo.addEventListener('input', () =&gt; {
+  clearTimeout(timer)
+  timer = setTimeout(async () =&gt; {
+    await call('storage.set', { key: 'memo', value: memo.value })
+    status.textContent = '저장됨'
+  }, 400)
+})
+
+document.getElementById('send').addEventListener('click', () =&gt; {
+  if (memo.value.trim() === '') return
+  call('chat.compose', { text: memo.value, send: false })
+    .catch((error) =&gt; (status.textContent = '보내지 못함: ' + error.message))
+})
+&lt;/script&gt;</code></pre></div>
+<p>답은 <code>{ litecode: 1, id, ok: true, result }</code> 또는 <code>{ litecode: 1, id, ok: false, error }</code> 모양입니다. <code>error</code> 는 <code>permission-missing</code> · <code>no-project</code> · <code>params-invalid</code> 같은 코드라 화면에 그대로 띄우기보다 경우별로 안내를 다는 편이 좋습니다.</p>
+
+<h2 id="install"><span class="step"></span>zip 으로 묶어 설치</h2>
+<p>폴더 <strong>안에서</strong> 묶어 <code>plugin.json</code> 이 zip 맨 위에 오게 합니다. 폴더째 묶으면 manifest 가 한 칸 안에 들어가 설치가 거절됩니다.</p>
+<div class="code"><div class="file">터미널</div><pre><code>mkdir -p build
+cd plugins/hello-panel
+zip -r ../../build/hello-panel.zip . -x '.DS_Store'</code></pre></div>
+<ol>
+  <li>앱의 <strong>설정 › 기능 › 플러그인</strong> 탭에서 <strong>[플러그인 추가 (zip)]</strong> 을 누르고 zip 을 고릅니다.</li>
+  <li>설치 확인 카드에 이름 · 설명 · 요청 권한(project · chat)이 보입니다. 설치합니다.</li>
+  <li>오른쪽 패널의 <code>+</code> 메뉴에 <strong>메모장</strong> 이 생깁니다. 열어 메모를 적고, 탭을 닫았다 다시 열어 메모가 남아 있는지 봅니다.</li>
+</ol>
+<p>거절되면 카드에 사유가 나옵니다 — 모르는 필드 · id 모양 · 진입 파일 없음 · 모르는 권한(오타면 맞는 이름을 같이 알려 줍니다) 같은 것들입니다.</p>
+
+<h2 id="iterate"><span class="step"></span>고치고 다시 설치</h2>
+<p><code>version</code> 을 올리고(<code>0.1.1</code>) 다시 묶어 같은 길로 설치하면 설치 카드에 지금 버전이 같이 보이고 새 버전으로 바뀝니다. 저장소로 나간 뒤에는 버전이 높아야만 업데이트로 보이니, 고칠 때마다 버전을 올리는 습관을 들이세요. 권한을 늘리면 앱이 사용자에게 다시 묻습니다.</p>
+
+<h2 id="permissions">앱 통로와 권한</h2>
+<p>패널이 부를 수 있는 것과 필요한 권한입니다. 권한이 없는 메서드를 부르면 <code>permission-missing</code> 이 돌아옵니다.</p>
+<table>
+  <tr><th>권한</th><th>메서드</th><th>하는 일</th></tr>
+  <tr><td>(없음)</td><td><code>storage.get</code> · <code>set</code> · <code>delete</code></td><td>플러그인별 JSON 값 <code>{ key, value }</code>. 전체 64KB — 설정 · 화면 상태용, 큰 캐시는 담지 않습니다</td></tr>
+  <tr><td>(없음)</td><td><code>panel.fullscreen</code></td><td><code>{ on }</code> — 오른쪽 패널을 전체 화면으로</td></tr>
+  <tr><td><code>project</code></td><td><code>project.info</code> · <code>readFile</code> · <code>listDir</code> · <code>findFiles</code> · <code>fileInfo</code> · <code>openFile</code> · <code>pickPath</code> · <code>changedFiles</code> · <code>openTabs</code></td><td>지금 프로젝트 안만 읽고, 파일을 앱의 미리보기로 엽니다. 경로는 프로젝트 기준 상대 경로 (<code>..</code> · 절대 경로 거절)</td></tr>
+  <tr><td><code>projectWrite</code></td><td><code>project.writeFile</code> · <code>removeFile</code></td><td>프로젝트의 <code>.litecode/</code> 바로 아래 <code>.md</code> 만 — 팀이 커밋해 같이 쓰는 문서용</td></tr>
+  <tr><td><code>chat</code></td><td><code>chat.compose</code> · <code>exists</code> · <code>titles</code> · <code>open</code></td><td><code>{ text, send }</code> — 새 대화를 열어 입력창을 채우거나(<code>send: false</code>) 곧바로 보냅니다</td></tr>
+  <tr><td><code>secrets</code></td><td><code>secrets.get</code> · <code>set</code> · <code>delete</code></td><td>토큰 · 비밀번호를 OS 암호 저장소로 봉해 둡니다</td></tr>
+  <tr><td><code>network</code></td><td><code>network.fetch</code> · <code>connection</code> · <code>setConnection</code></td><td>앱(메인)이 대신 요청합니다. 처음 가는 주소는 사용자에게 묻고, 기한 15초 · 응답 5MB</td></tr>
+  <tr><td><code>usage</code></td><td><code>usage.summary</code></td><td>토큰 사용량 숫자만 (대화 글 · 제목 없음)</td></tr>
+  <tr><td><code>mcp</code> · <code>tools</code></td><td><code>mcp.call</code> · <code>mcp.status</code> · <code>tools.run</code></td><td>플러그인이 싣고 온 MCP 서버 · 도구 — <a href="mcp-plugin.html">MCP 플러그인</a> 가이드</td></tr>
+</table>
+<div class="note"><p>권한은 필요한 것만 적으세요. 설치 카드에 그대로 보이고, 업데이트에서 권한이 늘면 사용자가 다시 허락해야 합니다.</p></div>
+
+<h2 id="summary">정리</h2>
+<p><code>plugin.json</code> 과 인라인 HTML 하나로 패널 플러그인을 만들고, 앱 통로로 저장 · 프로젝트 읽기 · 대화 열기를 했습니다. 실제 예로는 <a href="https://github.com/kim-taehan/lite-harness-plugins/tree/main/plugins/token-pet">token-pet</a>(<code>usage</code> · <code>storage</code> · 전체 화면)이 같은 모양입니다.</p>
+
+<h2 id="next">다음</h2>
+<div class="next">
+  <a href="mcp-plugin.html"><strong>MCP 플러그인 만들기</strong><small>AI 가 부르는 도구를 싣기</small></a>
+  <a href="publish.html"><strong>저장소로 내보내기</strong><small>메모장을 [플러그인 둘러보기] 에 올리기</small></a>
+</div>
+
+</article>
+<nav class="toc" aria-label="이 가이드의 목차">
+  <strong>이 가이드</strong>
+  <a href="#what">만들 것</a>
+  <a href="#need">준비물</a>
+  <a href="#how">어떻게 도나</a>
+  <a href="#manifest">1. plugin.json</a>
+  <a href="#html">2. 패널 HTML</a>
+  <a href="#install">3. 묶어 설치</a>
+  <a href="#iterate">4. 다시 설치</a>
+  <a href="#permissions">권한 표</a>
+  <a href="#summary">정리</a>
+</nav>
+</div>
+
+<footer class="site-footer">
+  <div class="wrap"><a href="../">← 가이드 목록</a> · 고칠 곳이 보이면 <a href="https://github.com/kim-taehan/lite-harness-plugins/issues">이슈</a>로 알려 주세요.</div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

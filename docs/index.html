@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lite Harness 플러그인 가이드</title>
+<meta name="description" content="Lite Harness 플러그인을 만들고 저장소로 내보내는 단계별 가이드">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="brand-mark">◆</span>Lite Harness 플러그인</a>
+    <nav>
+      <a href="#guides">가이드</a>
+      <a href="architecture.html">구조</a>
+      <a href="#reference">참고</a>
+      <a class="wide" href="https://github.com/kim-taehan/lite-harness-plugins">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>플러그인 가이드</h1>
+    <p>Lite Harness 에 화면 · AI 도구 · 언어를 더하는 플러그인을 만드는 법. 가이드마다 하나를 처음부터 끝까지 만들고, 15~30분이면 따라 할 수 있습니다.</p>
+    <div class="search"><input id="guide-search" type="search" placeholder="가이드 찾기 — 예: 패널, MCP, 언어 팩, release" aria-label="가이드 찾기"></div>
+  </div>
+</section>
+
+<section class="section" id="guides">
+  <div class="wrap">
+    <h2>시작하기</h2>
+    <p>위에서부터 순서대로 읽으면 패널 → AI 도구 → 팩 → 배포까지 이어집니다.</p>
+    <div class="cards">
+      <a class="card" href="guides/first-panel.html">
+        <span class="kind">패널</span>
+        <h3>첫 패널 플러그인 만들기</h3>
+        <p><code>plugin.json</code> 과 한 파일짜리 <code>index.html</code> 로 오른쪽 패널 탭을 만들고, 앱 통로로 값을 저장하고 프로젝트 이름을 읽고 AI 에게 말을 보냅니다.</p>
+        <span class="meta"><span>15분</span><span>storage · project · chat</span></span>
+      </a>
+      <a class="card" href="guides/mcp-plugin.html">
+        <span class="kind">AI 도구</span>
+        <h3>MCP 플러그인 만들기</h3>
+        <p>AI 가 부를 수 있는 도구를 MCP 서버로 싣습니다. 설정 칸 · 비밀 값 · [연결 확인] · 같이 설치되는 스킬, 그리고 <code>build.mjs</code> 로 한 파일에 묶기까지.</p>
+        <span class="meta"><span>30분</span><span>mcp · settings · skills</span></span>
+      </a>
+      <a class="card" href="guides/locale-grammar.html">
+        <span class="kind">팩</span>
+        <h3>언어 팩 · 문법 팩 만들기</h3>
+        <p>코드 없이 데이터만 담는 플러그인. 앱 문구를 다른 언어로 바꾸는 언어 팩과, 파일 개요가 새 언어를 읽게 하는 tree-sitter 문법 팩.</p>
+        <span class="meta"><span>20분</span><span>type: locale · grammar</span></span>
+      </a>
+      <a class="card" href="guides/publish.html">
+        <span class="kind">배포</span>
+        <h3>저장소로 내보내기</h3>
+        <p>만든 플러그인을 이 저장소에 올려 앱의 [플러그인 둘러보기] 에 보이게 합니다. 분류 · 바뀐 것 · <code>npm run release</code> · 버전 규칙.</p>
+        <span class="meta"><span>10분</span><span>catalog.json · dist</span></span>
+      </a>
+    </div>
+    <p class="empty">맞는 가이드가 없습니다.</p>
+  </div>
+</section>
+
+<section class="section" id="reference">
+  <div class="wrap">
+    <h2>참고</h2>
+    <p>가이드보다 자세한 규칙과 실제 플러그인 원본.</p>
+    <ul class="ref-list">
+      <li><a href="architecture.html">플러그인 구조<small>닿는 곳 · 닿지 못하는 곳 · 격리 · 수명 · 새 자리 더하기</small></a></li>
+      <li><a href="https://github.com/kim-taehan/lite-harness-plugins#readme">저장소 README<small>구조 · catalog.json · 버전 규칙 · 앱이 읽는 법</small></a></li>
+      <li><a href="https://github.com/kim-taehan/lite-harness-plugins/tree/main/plugins">실제 플러그인 원본<small>token-pet · sql-tuning · ui-test …</small></a></li>
+      <li><a href="https://github.com/kim-taehan/lite-harness-desktop/blob/dev/docs/architecture.md">앱 아키텍처 5절 · 플러그인<small>격리 · 권한 · 설치 검사 · 적용 범위</small></a></li>
+      <li><a href="https://github.com/kim-taehan/lite-harness-desktop/blob/dev/shared/extensions.ts">manifest 정의 (shared/extensions.ts)<small>필드 · 권한 · 거절 사유의 정본</small></a></li>
+    </ul>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">Lite Harness · <a href="https://github.com/kim-taehan/lite-harness-plugins">lite-harness-plugins</a> · 고칠 곳이 보이면 이슈나 PR 로 알려 주세요.</div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>
