@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SonarQube 확장(extensions/sonarqube)에 동봉할 분석기(스캐너 + Java 런타임)를 받아 `build/vendor/sonarqube/<타깃>/` 에 놓는다 (이슈 #537).
+// SonarQube 확장(plugins/sonarqube)에 동봉할 분석기(스캐너 + Java 런타임)를 받아 `build/vendor/sonarqube/<타깃>/` 에 놓는다 (이슈 #537).
 // 확장 zip 의 `runtime/`·`scanner/` 가 이 폴더다 — tools/analyze.mjs 가 이 자리를 쓴다. SonarQube 서버는 받지 않는다 (이슈 #964 — 확장은
 // 이미 돌고 있는 서버(예: Docker 의 sonarqube:community)에 주소·토큰으로 붙는다).
 //
@@ -12,9 +12,9 @@
 //   **mac-x64·win-x64 런타임은 미검증**
 // - SonarScanner CLI (JRE 없는 한 벌 10MB) — 같은 런타임으로 돈다(sonar.scanner.skipJreProvisioning=true — 서버에서 JRE 를 내려받지 않는다)
 //
-//   node extensions/sonarqube/fetch-runtime.mjs                  이 판의 타깃
-//   node extensions/sonarqube/fetch-runtime.mjs mac-x64 win-x64  지정한 타깃 · --all 전부
-//   node extensions/sonarqube/fetch-runtime.mjs --check <타깃…>   받아 둔 것이 있는지만
+//   node plugins/sonarqube/fetch-runtime.mjs                  이 판의 타깃
+//   node plugins/sonarqube/fetch-runtime.mjs mac-x64 win-x64  지정한 타깃 · --all 전부
+//   node plugins/sonarqube/fetch-runtime.mjs --check <타깃…>   받아 둔 것이 있는지만
 //
 // 놓는 자리 (타깃마다):
 //   runtime/     jlink 런타임 (bin/java)
@@ -165,7 +165,7 @@ function check(targets) {
   if (missing.length > 0) {
     fail(
       `동봉할 SonarQube 분석기(스캐너·런타임)가 없습니다: ${missing.join(', ')}\n` +
-        `  받으세요: node extensions/sonarqube/fetch-runtime.mjs ${missing.join(' ')}\n` +
+        `  받으세요: node plugins/sonarqube/fetch-runtime.mjs ${missing.join(' ')}\n` +
         '  (폐쇄망 안에서는 못 받습니다 — 망 밖에서 받아 확장 zip 을 반입하세요)',
     )
   }

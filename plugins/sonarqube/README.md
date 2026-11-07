@@ -19,7 +19,7 @@ SonarQube 확장 — 이미 돌고 있는 SonarQube 서버에 주소 + 계정(�
 
 ```bash
 npm run release -- sonarqube --platform darwin-arm64  # 묶고 dist · catalog 까지
-node extensions/sonarqube/build.mjs --platform darwin-arm64   # 묶기만 → build/sonarqube-darwin-arm64.zip
+node plugins/sonarqube/build.mjs --platform darwin-arm64   # 묶기만 → build/sonarqube-darwin-arm64.zip
 ```
 
 zip 은 75MB 남짓(풀면 약 100MB · 항목 370개 · 가장 큰 파일 `runtime/lib/modules` 약 46MB)이라 일반 확장 상한(zip 100MB · 총 200MB · 파일 50MB) 안이다. git 에는 넣지 않는다.

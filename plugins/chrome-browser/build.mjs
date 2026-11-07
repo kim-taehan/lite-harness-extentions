@@ -1,4 +1,4 @@
-// Chrome in Lite Harness 묶기 — `node extensions/chrome-browser/build.mjs` → build/chrome-browser.zip (stage 폴더를 묶음)
+// Chrome in Lite Harness 묶기 — `node plugins/chrome-browser/build.mjs` → build/chrome-browser.zip (stage 폴더를 묶음)
 // 1) @playwright/mcp · playwright-core 를 npm 레지스트리에서 고정 버전으로 받아 sha512(integrity)를 박아 둔 값과 댄다 (앱의 옛 scripts/fetch-browser.mjs 와 같은 값)
 // 2) 안 쓰는 폴더를 뺀다 (types · bin · lib/vite — 18MB → 7.6MB)
 // 3) extension.json · index.html · server.mjs + node_modules 를 zip 맨 위에 묶는다

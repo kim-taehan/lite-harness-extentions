@@ -1,4 +1,4 @@
-# lite-harness-extentions
+# lite-harness-plugins
 
 Lite Harness 배포 저장소입니다. 두 가지를 내보냅니다.
 
@@ -12,8 +12,8 @@ Lite Harness(데스크탑 앱)에 설치하는 확장도 이 저장소에서 받
 ## 구조
 
 ```
-extensions/<id>/         확장 원본 — extension.json(플러그인은 plugin.json) + 진입 파일(index.html · locale.json …). 분류 폴더 없이 id 하나로
-extensions/<id>/build.mjs 빌드가 필요한 확장만 — build/<id>[-<platform>].zip 을 만든다 (아래 참고)
+plugins/<id>/            확장 원본 — extension.json(플러그인은 plugin.json) + 진입 파일(index.html · locale.json …). 분류 폴더 없이 id 하나로
+plugins/<id>/build.mjs   빌드가 필요한 확장만 — build/<id>[-<platform>].zip 을 만든다 (아래 참고)
 dist/<id>-<version>.zip  내보낸 zip (npm run release 가 만든다, 최신 버전만 남긴다)
 categories.json          확장 id → 분류(game · dev-tool · locale). release 가 catalog 의 category 로 싣는다
 catalog.json             앱이 읽는 목록 — id · name · description · category · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
@@ -36,7 +36,7 @@ package.json             build.mjs 가 쓰는 의존성 (esbuild · MCP SDK · D
 
 ## 새 버전 올리는 법
 
-1. `extensions/<폴더>/` 의 파일을 고친다.
+1. `plugins/<폴더>/` 의 파일을 고친다.
 2. `extension.json` 의 `version` 을 올린다 (`1.2.3` 꼴). 바뀐 것을 업데이트 창에 보이려면 그 폴더에 `changes.txt` 를 두고 한 줄에 하나씩 적는다 (선택 — zip 에는 들어가지 않고 catalog 의 `changes` 로만 간다. `extension.json` 에 적으면 앱이 모르는 필드로 설치를 거절한다).
 3. 내보내고 올린다.
 
@@ -46,7 +46,7 @@ npm run release -- --all         # 전부
 git add -A && git commit -m "<id> 1.2.3" && git push
 ```
 
-새 확장은 `extensions/` 에 폴더를 하나 만들고 같은 순서로 하면 된다.
+새 확장은 `plugins/` 에 폴더를 하나 만들고 같은 순서로 하면 된다.
 
 ## 버전 규칙
 
@@ -65,8 +65,8 @@ git add -A && git commit -m "<id> 1.2.3" && git push
 
 사내 PC 에서 GitHub 에 닿지 않으면 저장소를 들고 들어간다.
 
-1. 밖(인터넷 되는 PC)에서 이 저장소를 받는다 — GitHub 의 **Code › Download ZIP**, 또는 `git clone https://github.com/kim-taehan/lite-harness-extentions.git`.
-2. 사내 PC 로 옮겨(USB · 공유 폴더 등) 아무 폴더에 푼다. 예: `C:\lite-harness-extentions` · `~/lite-harness-extentions`.
+1. 밖(인터넷 되는 PC)에서 이 저장소를 받는다 — GitHub 의 **Code › Download ZIP**, 또는 `git clone https://github.com/kim-taehan/lite-harness-plugins.git`.
+2. 사내 PC 로 옮겨(USB · 공유 폴더 등) 아무 폴더에 푼다. 예: `C:\lite-harness-plugins` · `~/lite-harness-plugins`.
 3. 앱의 **설정 › 기능 › 확장 저장소** 를 펼쳐 저장소 주소를 그 폴더로 바꾼다 ([폴더 고르기]).
 4. 새 버전이 나오면 1~2 를 다시 해서 폴더를 덮어쓰고, 앱에서 [새로 확인] 을 누른다.
 
@@ -84,17 +84,17 @@ git add -A && git commit -m "<id> 1.2.3" && git push
 | `rust-grammar` · `csharp-grammar` · `kotlin-grammar` | 문법 패키지(package.json 의 별칭 `code-grammar-*`)에서 wasm 을 꺼내 extension.json · LICENSE 와 묶는다 (`scripts/grammar-pack.mjs`) | `npm run release rust-grammar` |
 | `sonarqube` | 분석기(Java 런타임 + SonarScanner, 풀어서 약 100MB)를 플랫폼별로 받아 싣는다 | `npm run release -- sonarqube --platform darwin-arm64` |
 
-- sql-tuning 에 사내 SQL 표준을 넣으려면 `node extensions/sql-tuning/build.mjs --standard <표준.md>` 로 묶고 `npm run release -- --zip build/sql-tuning.zip`.
-- sonarqube 는 플랫폼 전용이라 `--platform`(`darwin-arm64` · `darwin-x64` · `win32-x64`)이 꼭 있어야 하고, `--all` 은 건너뛴다. 분석기는 `extensions/sonarqube/fetch-runtime.mjs` 가 망 밖에서 버전 · sha256 고정으로 받아 `build/vendor/` 에 둔다(git 에는 넣지 않는다, 받으면 수 GB). 지금은 mac(Apple 칩)판만 검증됐다.
+- sql-tuning 에 사내 SQL 표준을 넣으려면 `node plugins/sql-tuning/build.mjs --standard <표준.md>` 로 묶고 `npm run release -- --zip build/sql-tuning.zip`.
+- sonarqube 는 플랫폼 전용이라 `--platform`(`darwin-arm64` · `darwin-x64` · `win32-x64`)이 꼭 있어야 하고, `--all` 은 건너뛴다. 분석기는 `plugins/sonarqube/fetch-runtime.mjs` 가 망 밖에서 버전 · sha256 고정으로 받아 `build/vendor/` 에 둔다(git 에는 넣지 않는다, 받으면 수 GB). 지금은 mac(Apple 칩)판만 검증됐다.
 - 문법 팩을 더할 때는 폴더 하나(extension.json · LICENSE · 다른 팩과 같은 한 줄짜리 build.mjs) + `npm i -D -E code-grammar-<언어>@npm:<문법 패키지>@<버전>` + categories.json 한 줄. 앱에 이미 있는 언어의 확장자는 앱이 설치를 거절한다.
 - chrome-browser 의 Playwright MCP 버전을 올리면 도구 이름이 바뀔 수 있다 — `server.mjs` 의 `DENIED` 를 새 `tools/list` 와 다시 댄다.
-- 빌드가 필요한 확장의 테스트는 `extensions/<id>/tests/` 에 있다. `npm test`(vitest) 로 돌리고, zip 에는 들어가지 않는다(build.mjs 가 고른 파일만 싣는다).
+- 빌드가 필요한 확장의 테스트는 `plugins/<id>/tests/` 에 있다. `npm test`(vitest) 로 돌리고, zip 에는 들어가지 않는다(build.mjs 가 고른 파일만 싣는다).
 - release 는 대상 전부의 분류를 먼저 확인하고 나서 빌드한다. 하나라도 빠지면 dist 와 catalog 를 건드리지 않고 멈춘다.
 
 ## catalog 항목의 category
 
 분류는 `categories.json` 에 확장 id 마다 하나 적는다. 값은 `game` · `dev-tool` · `locale` 중 하나이고, 없거나 다른 값이면 release 가 멈춘다. 새 확장을 올리기 전에 여기에 먼저 한 줄 더한다.
-`extension.json` 에는 적지 않는다(앱이 모르는 필드로 설치를 거절한다). 폴더도 분류별로 나누지 않는다 — `extensions/<id>/` 하나로 둔다.
+`extension.json` 에는 적지 않는다(앱이 모르는 필드로 설치를 거절한다). 폴더도 분류별로 나누지 않는다 — `plugins/<id>/` 하나로 둔다.
 
 ## catalog 항목의 platform
 

@@ -1,6 +1,6 @@
 // 확장 내보내기 — `npm run release <id 또는 폴더> [--platform darwin-arm64]` · `npm run release -- --all`
 // 폴더에 build.mjs 가 있으면 그것을 돌려 build/<폴더>[-<platform>].zip 을 받아 --zip 과 같은 길로 올린다 (sonarqube 처럼 플랫폼 전용이면 --platform)
-// 없으면 extensions/<폴더>/ 의 파일을 폴더 없이 zip 으로 묶어 dist/<id>-<version>.zip 에 두고, sha256 과 함께 catalog.json 의 그 항목을 extension.json 으로 갱신한다.
+// 없으면 plugins/<폴더>/ 의 파일을 폴더 없이 zip 으로 묶어 dist/<id>-<version>.zip 에 두고, sha256 과 함께 catalog.json 의 그 항목을 extension.json 으로 갱신한다.
 // 앱(Lite Harness)은 catalog.json 을 읽고, 받은 zip 의 sha256 이 같을 때만 설치한다. 의존성 없음 — 시스템 zip 을 쓴다.
 // 옛 zip 은 지운다(같은 id 의 dist/<id>-*.zip 중 새 버전만 남긴다) — 저장소에 옛 버전이 쌓이지 않게. 되돌리기는 git 기록으로.
 // extension.json 에 "changes": ["바뀐 것", …] 를 적으면 catalog 에 실려 앱의 업데이트 창에 보인다 (선택)
@@ -10,7 +10,7 @@ import { existsSync, statSync, mkdirSync, readdirSync, readFileSync, rmSync, wri
 import path from 'node:path'
 
 const root = path.resolve(import.meta.dirname, '..')
-const extensionsDir = path.join(root, 'extensions')
+const extensionsDir = path.join(root, 'plugins')
 const distDir = path.join(root, 'dist')
 const catalogFile = path.join(root, 'catalog.json')
 const categoriesFile = path.join(root, 'categories.json')
@@ -78,7 +78,7 @@ function release(folder, platform, catalog) {
   for (const old of readdirSync(distDir)) if (versioned.test(old) && old !== zipName) rmSync(path.join(distDir, old))
   const sha256 = createHash('sha256').update(readFileSync(zipFile)).digest('hex')
   const previous = catalog.extensions.find((entry) => entry.id === id)
-  // 바뀐 것 — extensions/<폴더>/changes.txt 의 줄(이번 버전 것만 적는다, zip 에는 안 들어간다). 없으면 같은 버전의 옛 항목 것
+  // 바뀐 것 — plugins/<폴더>/changes.txt 의 줄(이번 버전 것만 적는다, zip 에는 안 들어간다). 없으면 같은 버전의 옛 항목 것
   const changesFile = path.join(extensionsDir, folder, 'changes.txt')
   const lines = existsSync(changesFile) ? readFileSync(changesFile, 'utf8').split('\n').map((line) => line.replace(/^[-*·]\s*/, '').trim()).filter(Boolean) : []
   const changes = lines.length > 0 ? lines : previous && previous.version === version ? previous.changes : undefined
@@ -130,7 +130,7 @@ const skipped = args.includes('--all') && !platform ? all.filter(platformOnly) :
 for (const folder of skipped) console.log(`- ${folder} 건너뜀 (플랫폼 전용 — --platform 으로 따로 올린다)`)
 const targets = args.includes('--all') ? all.filter((folder) => !skipped.includes(folder)) : named.map((arg) => all.find((folder) => folder === arg || manifestOf(folder).id === arg) ?? arg)
 for (const folder of targets) {
-  if (!all.includes(folder)) throw new Error(`extensions/${folder} 가 없습니다`)
+  if (!all.includes(folder)) throw new Error(`plugins/${folder} 가 없습니다`)
   categoryOf(manifestOf(folder).id)
 }
 for (const folder of targets) release(folder, platform, catalog)

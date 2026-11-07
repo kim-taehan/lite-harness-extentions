@@ -1,4 +1,4 @@
-// SonarQube 묶기 — `node extensions/sonarqube/build.mjs --platform darwin-arm64` → build/sonarqube-<platform>.zip
+// SonarQube 묶기 — `node plugins/sonarqube/build.mjs --platform darwin-arm64` → build/sonarqube-<platform>.zip
 // 분석기(Java 런타임 + SonarScanner, 풀어서 약 100MB)는 fetch-runtime.mjs 가 망 밖에서 받아 build/vendor/ 에 둔다 (git 에는 넣지 않는다)
 import { execFileSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'

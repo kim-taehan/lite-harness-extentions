@@ -1,5 +1,5 @@
 {
-  "name": "lite-harness-extentions",
+  "name": "lite-harness-plugins",
   "private": true,
   "type": "module",
   "scripts": {

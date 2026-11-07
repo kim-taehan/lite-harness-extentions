@@ -22,7 +22,7 @@ TypeScript 를 그대로 `node` 로 돌린다(Node 22.18+ 의 타입 걷어 내�
 
 ## 플러그인으로 쓰기 (litecode)
 
-1. `node extensions/sql-tuning/build.mjs [--standard <사내 표준.md>]` → `build/sql-tuning.zip` (표준 없이 올릴 때는 `npm run release sql-tuning`). `--standard` 를 주면 그 문서를 스킬의 `references/sql-standard.md` 로 싣는다(Word · PDF · HWP 는 먼저 Markdown 으로). 앱이 스킬 폴더를 통째로 엔진에 옮기므로(#1081) AI 가 읽는다 (서버는 드라이버째 한 파일로 묶여 PC 에 Node 가 없어도 된다 — 앱이 자기 실행 파일로 돌린다)
+1. `node plugins/sql-tuning/build.mjs [--standard <사내 표준.md>]` → `build/sql-tuning.zip` (표준 없이 올릴 때는 `npm run release sql-tuning`). `--standard` 를 주면 그 문서를 스킬의 `references/sql-standard.md` 로 싣는다(Word · PDF · HWP 는 먼저 Markdown 으로). 앱이 스킬 폴더를 통째로 엔진에 옮기므로(#1081) AI 가 읽는다 (서버는 드라이버째 한 파일로 묶여 PC 에 Node 가 없어도 된다 — 앱이 자기 실행 파일로 돌린다)
 2. 설정 › 기능 › 플러그인 에서 zip 을 설치한다. 쓸 범위(이 프로젝트 · 모든 프로젝트)를 고르고, 다음 단계 폼에 DB 연결 정보를 넣어 [연결 확인] — "연결됨 — …" 이 보이면 된다
 3. 대화에서 튜닝을 요청한다. 스킬은 플러그인이 켜져 있는 동안 앱 스킬로 보인다
 4. (선택) 오른쪽 패널 `+` › SQL 튜닝 — 이 프로젝트의 표준 문서를 고치거나 바꾸고(새 대화부터 적용, 커밋하면 팀에도), 연결을 확인 · 고친다
@@ -34,9 +34,9 @@ DB 연결 정보는 "이 프로젝트" 로 켜면 프로젝트마다 따로, "�
 1. DB 계정은 **조회 전용**으로 만든다 — 서버는 권한을 대신 지킬 수 없다(읽기 전용 트랜잭션 · 문장 검사는 둘째 담).
    - Oracle: `CREATE SESSION` + 대상 테이블 `SELECT` + `SELECT_CATALOG_ROLE`(V$SQLAREA · DISPLAY_CURSOR). INSERT 권한 없이도 `EXPLAIN PLAN` 은 된다(PLAN_TABLE 은 세션 임시 테이블, 실측 2026-11-02 Oracle Free 23).
    - PostgreSQL: 대상 테이블 `SELECT` + `pg_read_all_stats`(top_queries). `top_queries` 는 `pg_stat_statements` 가 있어야 한다.
-2. 앱 MCP 팝업에서 이 프로젝트에 서버를 더한다 — 명령 `node extensions/sql-tuning/server/index.ts`, env `DATABASE_URL` 은 **비밀 변수**로(앱이 암호화, AI 는 값을 못 본다). 파일로 쓰면:
+2. 앱 MCP 팝업에서 이 프로젝트에 서버를 더한다 — 명령 `node plugins/sql-tuning/server/index.ts`, env `DATABASE_URL` 은 **비밀 변수**로(앱이 암호화, AI 는 값을 못 본다). 파일로 쓰면:
    ```json
-   { "mcpServers": { "sql-tuning": { "command": "node", "args": ["extensions/sql-tuning/server/index.ts"], "env": { "DATABASE_URL": "${DB_URL}" } } } }
+   { "mcpServers": { "sql-tuning": { "command": "node", "args": ["plugins/sql-tuning/server/index.ts"], "env": { "DATABASE_URL": "${DB_URL}" } } } }
    ```
 3. 스킬: `skills/sql-tuning` 폴더를 통째로(references 포함) 호스트의 스킬 폴더로 복사한다. 사내 표준은 그 안 `references/sql-standard.md` 로 넣는다.
 4. 승인: 쿼리를 실제로 실행하는 `runtime_plan` · `compare` · `query` 와 실제 바인드 값을 읽는 `captured_sql` 은 매번 묻게 둔다 — 엔진 권한에서 `sql-tuning_runtime_plan` · `sql-tuning_compare` · `sql-tuning_query` · `sql-tuning_captured_sql` 을 `ask`.

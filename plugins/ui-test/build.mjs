@@ -1,4 +1,4 @@
-// UI 테스트 플러그인 묶기 — `node extensions/ui-test/build.mjs` → build/ui-test.zip
+// UI 테스트 플러그인 묶기 — `node plugins/ui-test/build.mjs` → build/ui-test.zip
 // MCP 서버(server/index.ts)를 MCP SDK 째 server/ui-test.mjs 한 파일로 묶는다. playwright-core 는 esbuild 로 묶이지 않아(__dirname 으로 자기 package.json ·
 // browsers.json 을 찾고, 쓰지 않는 chromium-bidi 를 require 한다) server/node_modules/playwright-core 에 파일 그대로 싣는다 — Node 는 묶은 서버 옆
 // node_modules 에서 찾는다. 브라우저는 싣지 않는다 — PC 의 Chrome · Edge 를 channel 로 쓴다. zip 에는 plugin.json · index.html(패널) · server/ · skills/

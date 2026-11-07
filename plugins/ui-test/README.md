@@ -46,7 +46,7 @@ UI 테스트 (베타) — 화면 소스를 읽어 시나리오 초안을 대화�
 
 ## zip
 
-`npm run release ui-test` (묶기만 하려면 `node extensions/ui-test/build.mjs` → `build/ui-test.zip`, 약 3 MB). 서버는 MCP SDK 째 `server/ui-test.mjs` 한 파일로 묶고, playwright-core 는 esbuild 로 묶이지 않아(자기 폴더를 `__dirname` 으로 찾고 쓰지 않는 chromium-bidi 를 require) `server/node_modules/playwright-core` 에 파일 그대로 싣는다. 앱이 자기 실행 파일(Node)로 띄우므로 PC 에 Node 가 없어도 되고, 브라우저는 내려받지 않고 PC 의 Chrome(없으면 Edge)을 `channel` 로 쓴다.
+`npm run release ui-test` (묶기만 하려면 `node plugins/ui-test/build.mjs` → `build/ui-test.zip`, 약 3 MB). 서버는 MCP SDK 째 `server/ui-test.mjs` 한 파일로 묶고, playwright-core 는 esbuild 로 묶이지 않아(자기 폴더를 `__dirname` 으로 찾고 쓰지 않는 chromium-bidi 를 require) `server/node_modules/playwright-core` 에 파일 그대로 싣는다. 앱이 자기 실행 파일(Node)로 띄우므로 PC 에 Node 가 없어도 되고, 브라우저는 내려받지 않고 PC 의 Chrome(없으면 Edge)을 `channel` 로 쓴다.
 
 ## AI 없이 (CI)
 
