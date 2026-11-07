@@ -22,7 +22,12 @@ Tell the database from the code (a mapper named `*_oracle.xml`, the JDBC URL or 
 
 ## Follow the company SQL standard
 
-Before tuning, read the company SQL development standard: open `references/sql-standard.md` in this skill's folder with the file **read** tool and read it completely. If it does not exist, say that no SQL standard is installed, and leave the rule IDs out of the answer.
+Before tuning, read the company SQL development standard with the file **read** tool, completely. Use the first one that exists:
+
+1. The project's own standard: `.litecode/sql-standard.md` in the project root (the working directory). The team commits it, so it wins over the copy in this skill.
+2. Otherwise, `references/sql-standard.md` in this skill's folder.
+
+If neither exists, say that no SQL standard is installed, and leave the rule IDs out of the answer.
 
 - Every proposal (rewrite, hint, index, code change) must comply with the standard. Cite the rule IDs it follows, for example "(SQL-20)".
 - If the best technical fix breaks a rule (for example, the standard forbids hints), do not propose it as the fix. Propose the best compliant alternative, and mention the non-compliant option only as a note that needs approval.
@@ -110,5 +115,5 @@ Answer in the user's language, with these sections:
 - **② Hint**: only if ① was not enough. Same format, plus the plan-fixing risk.
 - **③ Index (proposal)**: only if ① and ② were not enough. Give the DDL, the expected effect (labelled if estimated), and the impact: other queries, write volume, overlapping indexes, and how to verify — give the verification steps from the database notes exactly.
 - **④ Other**: only the items that apply.
-- **Standard**: `references/sql-standard.md`, or that none is installed. List the rule IDs the original code violates.
+- **Standard**: which file you used — `.litecode/sql-standard.md` (this project) or `references/sql-standard.md` (the skill's default) — or that none is installed. List the rule IDs the original code violates.
 - Close by stating that nothing was created or changed in the database.

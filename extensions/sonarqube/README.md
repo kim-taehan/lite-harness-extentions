@@ -15,19 +15,13 @@ SonarQube 확장 — 이미 돌고 있는 SonarQube 서버에 주소 + 계정(�
 
 ## zip 만들기
 
-분석기(약 100MB, 풀었을 때)는 레포에 넣지 않는다 — 망 밖에서 받아 묶는다:
+분석기(약 100MB, 풀었을 때)는 레포에 넣지 않는다. `build.mjs` 가 `fetch-runtime.mjs` 로 망 밖에서 받아(버전 · sha256 고정, `build/vendor/sonarqube/<타깃>/`) 확장 파일과 함께 묶는다:
 
 ```bash
-node scripts/fetch-sonarqube.mjs            # build/vendor/sonarqube/<타깃>/{runtime,scanner} 에 받는다 (버전·sha256 고정)
-mkdir -p /tmp/sq && cp extensions/dev-tools/sonarqube/extension.json extensions/dev-tools/sonarqube/index.html /tmp/sq/
-cp -R extensions/dev-tools/sonarqube/tools /tmp/sq/    # 앱이 .mjs 를 자기 실행 파일로 돌리므로 실행 비트는 없어도 된다
-cp -R extensions/dev-tools/sonarqube/skills /tmp/sq/  # manifest 의 skills — 없으면 수정 요청 스킬이 안 뜬다
-cp -R build/vendor/sonarqube/mac-arm64/runtime build/vendor/sonarqube/mac-arm64/scanner /tmp/sq/
-(cd /tmp/sq && zip -qry -1 ../sonarqube-0.5.3-mac-arm64.zip .)
+npm run release -- sonarqube --platform darwin-arm64  # 묶고 dist · catalog 까지
+node extensions/sonarqube/build.mjs --platform darwin-arm64   # 묶기만 → build/sonarqube-darwin-arm64.zip
 ```
 
 zip 은 75MB 남짓(풀면 약 100MB · 항목 370개 · 가장 큰 파일 `runtime/lib/modules` 약 46MB)이라 일반 확장 상한(zip 100MB · 총 200MB · 파일 50MB) 안이다. git 에는 넣지 않는다.
-패널·도구만 고쳤으면 있는 zip 의 파일만 바꿔 넣는다:
-`(cd extensions/dev-tools/sonarqube && zip -q ../<zip> extension.json index.html tools/analyze.mjs)`
 
 0.4.x(내장 서버)에서 올리면 옛 서버 데이터(`data/sonarqube/server/` 의 data·logs 등)가 남는다 — 확장을 지우면 함께 지워진다. 스캐너 캐시(`server/scanner-home`)는 그대로 다시 쓴다.

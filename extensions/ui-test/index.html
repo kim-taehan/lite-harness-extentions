@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>UI 테스트</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c1f26;--sub:#5f6470;--faint:#80868f;--line:#e3e5ea;--soft:#eef0f4;--ok:#23774a;--ok-bg:#e9f6ee;--bad:#a12a2f;--bad-bg:#fdecec;--btn:#1c1f26;--btn-text:#fff;--accent:#3566d6;--accent-bg:#e4edfd;--db:#6b4cc6;--db-bg:#efeafb;--warn:#8a5200;--warn-bg:#fff6e8}
+@media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f2228;--text:#e8eaf0;--sub:#b0b6c1;--faint:#8a909c;--line:#2e323a;--soft:#2a2e36;--ok:#6fd39b;--ok-bg:#1d3327;--bad:#ff8a8f;--bad-bg:#3a2224;--btn:#e8eaf0;--btn-text:#16181d;--accent:#7ea4f4;--accent-bg:rgba(107,151,242,.18);--db:#b29cf3;--db-bg:rgba(178,156,243,.16);--warn:#f0a53a;--warn-bg:rgba(240,165,58,.14);color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif}
+main{display:flex;flex-direction:column;gap:10px;padding:12px;min-height:100%}
+.head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card.on{border-color:var(--accent)}
+h2{margin:0;font-size:13.5px}
+.sub{font-size:11.5px;color:var(--faint);overflow-wrap:anywhere}
+.line{font-size:12px;color:var(--sub)}
+.st{font-size:11px;padding:1px 8px;border-radius:99px;font-weight:600;white-space:nowrap;display:inline-block}
+.ok{background:var(--ok-bg);color:var(--ok)}.bad{background:var(--bad-bg);color:var(--bad)}.run{background:var(--accent-bg);color:var(--accent)}.wait{border:1px solid var(--line);color:var(--faint);font-weight:400}.db{background:var(--db-bg);color:var(--db)}
+.hist{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12px;padding:4px 0;border-top:1px solid var(--line)}
+a,.link{color:var(--accent);cursor:pointer;background:none;border:0;padding:0;font:inherit;font-size:12px;height:auto}
+button{font:inherit;font-size:12.5px;cursor:pointer;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);white-space:nowrap}
+button.primary{background:var(--btn);border-color:var(--btn);color:var(--btn-text);font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+.menuwrap{position:relative}
+.menu{position:absolute;right:0;top:34px;width:200px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);padding:4px;display:flex;flex-direction:column;z-index:2}
+.menu button{height:32px;border:0;background:transparent;text-align:left;padding:0 10px;border-radius:7px}
+.menu button:hover{background:var(--soft)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.case{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.case>header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;font-size:13px;font-weight:600;background:var(--soft)}
+.step{display:grid;grid-template-columns:18px minmax(0,1fr) 64px;gap:8px;align-items:center;padding:6px 12px;border-top:1px solid var(--line);font-size:12.5px}
+.thumb{width:64px;height:40px;border-radius:5px;background:var(--soft);border:1px solid var(--line);object-fit:cover;display:block}
+.thumb.fail{border-color:var(--bad)}
+.err{font-size:11.5px;color:var(--bad);overflow-wrap:anywhere}
+.bar{height:6px;border-radius:99px;background:var(--soft);overflow:hidden}
+.bar>div{height:100%;background:var(--accent)}
+.pick{display:flex;flex-direction:column;gap:2px;padding:6px 0}
+.pick label{display:flex;gap:8px;align-items:center;font-size:12.5px}
+.msg{padding:8px 10px;border-radius:8px;font-size:12.5px;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.bad{background:var(--bad-bg);color:var(--bad)}
+.note{margin:0;font-size:11.5px;color:var(--faint)}
+.scn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:12.5px}
+.scn .acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.tag{font-size:10.5px;padding:0 7px;border-radius:99px;border:1px solid var(--line);color:var(--faint);white-space:nowrap}
+.tag.warn{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}
+.tag.bad{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
+button.small{height:26px;padding:0 9px;font-size:12px}
+.cov{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--sub)}
+.cov span.row{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.cov .bar{width:90px;height:6px}
+.rules{font-size:11.5px;color:var(--faint);padding-top:6px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.rowhead{padding:5px 12px;border-top:1px solid var(--line);font-size:12px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+code{font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--soft);border-radius:5px;padding:0 5px}
+</style>
+</head>
+<body>
+<div id="app"><main><div class="card line">불러오는 중…</div></main></div>
+<script>
+// UI 테스트 패널 (#1248, 시안 MrZMThmkHeChQyTtZCVDYJ ② · ④ · ⑤) — 묶음 목록 · 규칙 덮임(어림값) · 시나리오 줄(코드 낡음 · 코드 바뀜 · [보강] · [AI 에게 맡기기]) ·
+// 최근 이력(결과서 열기) · [다시 수행 ▾] · 지금 수행의 진행과 [멈추기].
+// 자기 MCP 서버의 도구를 mcp.call 로 부른다: list(json) · run · progress · stop · shot. 서버는 이 프로젝트 폴더에서 돈다 — 묶음 · 이력도 이 프로젝트 것만.
+// [보강] · [AI 에게 맡기기] · 안 다룬 규칙은 chat.compose(새 대화에 요청 글을 바로 보낸다)로 — 고르기 · 고치기는 대화에서 스킬이 한다
+// 앱과는 통로로만 말한다: parent.postMessage({ litecode: 1, id, method, params })
+
+let seq = 0
+const waiting = new Map()
+addEventListener('message', (event) => {
+  const data = event.data
+  if (event.source !== parent || !data || data.litecode !== 1 || !waiting.has(data.id)) return
+  const done = waiting.get(data.id)
+  waiting.delete(data.id)
+  done(data)
+})
+function call(method, params) {
+  const id = ++seq
+  return new Promise((resolve, reject) => {
+    waiting.set(id, (reply) => (reply.ok ? resolve(reply.result) : reject(new Error(reply.error))))
+    parent.postMessage({ litecode: 1, id, method, params }, '*')
+  })
+}
+/** 자기 MCP 도구 — 실패면 Error(글) */
+async function tool(name, args = {}) {
+  const result = await call('mcp.call', { tool: name, args })
+  if (result?.isError) throw new Error(result.text)
+  return result?.text ?? ''
+}
+const ERRORS = { 'no-project': '열린 프로젝트가 없습니다', 'mcp-failed': '플러그인 서버를 띄우지 못했습니다', 'not-on': '이 프로젝트에서 UI 테스트가 꺼져 있습니다' }
+const errorText = (error) => ERRORS[error?.message] || error?.message || String(error)
+
+const state = {
+  data: undefined, // list json
+  error: '',
+  menu: '', // 열린 메뉴의 묶음
+  picking: undefined, // { suite, chosen: Set }
+  headed: true,
+  progress: undefined,
+  thumbs: new Map(), // key → data URL | 'loading'
+  message: '',
+}
+
+const pad = (n) => String(n).padStart(2, '0')
+const when = (ms) => {
+  const d = new Date(ms)
+  const today = new Date()
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return d.toDateString() === today.toDateString() ? `오늘 ${time}` : `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`
+}
+const sec = (ms) => `${((ms || 0) / 1000).toFixed(1)}초`
+const cmpLine = (c) => (c ? `새로 실패 ${c.newFail.length} · 고쳐짐 ${c.fixed.length} · 그대로 실패 ${c.stillFail.length}` : '처음 수행')
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag)
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value === undefined || value === false) continue
+    if (key.startsWith('on')) node.addEventListener(key.slice(2), value)
+    else node.setAttribute(key, value === true ? '' : value)
+  }
+  for (const child of children.flat(Infinity)) if (child !== undefined && child !== null && child !== false) node.append(child instanceof Node ? child : String(child))
+  return node
+}
+const btn = (label, onclick, attrs = {}) => el('button', { type: 'button', onclick, ...attrs }, label)
+const counts = (passed, failed) => [el('span', { class: 'st ok' }, passed), ' ', failed ? el('span', { class: 'st bad' }, failed) : '']
+
+async function load() {
+  try {
+    state.data = JSON.parse(await tool('list', { json: true }))
+    state.error = ''
+  } catch (error) {
+    state.error = errorText(error)
+  }
+  render()
+}
+
+/** 결과서 열기 — 프로젝트 안이면 오른쪽 패널의 파일 미리보기(HTML 20MB 까지 — 결과서는 스크린샷 예산으로 그 안), 밖(공유 드라이브)이면 경로만 보인다.
+ *  확장이 바깥 브라우저로 여는 통로는 앱에 없다(project.openFile 은 미리보기만) */
+async function openReport(report) {
+  if (report.startsWith('/') || /^[A-Za-z]:/.test(report)) {
+    state.message = `결과서: ${report}`
+    return render()
+  }
+  await call('project.openFile', { path: report }).catch((error) => ((state.message = errorText(error)), render()))
+}
+
+let polling
+async function poll() {
+  try {
+    state.progress = JSON.parse(await tool('progress'))
+  } catch {
+    // 서버가 다시 뜨는 중
+  }
+  for (const item of state.progress?.cases ?? []) for (const step of [...item.steps, ...(item.rows ?? []).flatMap((row) => row.steps)]) for (const name of [step.shot, step.failShot]) if (name) thumb(name)
+  render()
+  if (state.progress?.running) polling = setTimeout(poll, 1000)
+  else {
+    polling = undefined
+    void load()
+  }
+}
+
+function thumb(name) {
+  const key = `${state.progress.suite}/${state.progress.runId}/${name}`
+  if (state.thumbs.has(key)) return
+  state.thumbs.set(key, 'loading')
+  tool('shot', { suite: state.progress.suite, run: state.progress.runId, name }).then(
+    (url) => (state.thumbs.set(key, url), render()),
+    () => state.thumbs.delete(key),
+  )
+}
+
+async function rerun(suite, scenarios) {
+  state.menu = ''
+  state.picking = undefined
+  state.message = ''
+  const args = { suite, headed: state.headed, ...(scenarios && { scenarios }) }
+  // run 은 끝날 때까지 돌아오지 않는다 — 진행은 progress 로 본다
+  tool('run', args).then(
+    () => undefined,
+    (error) => ((state.message = errorText(error)), render()),
+  )
+  setTimeout(() => {
+    if (!polling) poll()
+  }, 400)
+}
+
+/** 대화로 넘기기 — 새 대화를 열어 요청 글을 바로 보낸다 (chat 권한) */
+async function ask(text) {
+  state.message = ''
+  try {
+    await call('chat.compose', { text, send: true })
+  } catch (error) {
+    state.message = errorText(error)
+    render()
+  }
+}
+
+const KIND_NAME = { validation: '검증', business: '업무' }
+
+function fixPrompt(suite, item) {
+  const fail = item.lastFailure || {}
+  return [
+    `UI 테스트 묶음 "${suite.name}"(${suite.id}) 의 시나리오 ${item.id} "${item.name}" 이 지난 수행에서 실패했습니다.`,
+    fail.row && `- 행: ${fail.row}`,
+    fail.step && `- 실패 단계: ${fail.step}`,
+    fail.error && `- 오류: ${fail.error}`,
+    fail.kind && `- 갈래(어림): ${fail.kind}`,
+    `ui-test 스킬로 원인을 가려 주세요. 낡은 테스트(셀렉터 · 기다림 · 코드 오류)면 시나리오(${item.file})의 ## 테스트 방법을 먼저 읽고 .spec.mjs 를 고쳐 그 시나리오만 다시 돌려 주세요. 앱 결함으로 보이면 코드를 고치지 말고 근거(단계 · 오류 · 결과서 스크린샷)와 함께 보고해 주세요. 시나리오 md 는 제 확인 없이 고치지 마세요.`,
+  ].filter(Boolean).join('\n')
+}
+
+function enrichPrompt(suite, item) {
+  return [
+    `UI 테스트 묶음 "${suite.name}"(${suite.id}) 의 시나리오 ${item.id} "${item.name}"(${item.file}) 를 보강해 줘.`,
+    item.changed?.length && `코드 바뀜: ${item.changed.map((change) => change.path + (change.state === 'missing' ? '(없어짐)' : '')).join(', ')} — 기대 메시지 등 바뀐 점도 제안에 넣어 줘.`,
+    'ui-test 스킬의 보강 순서대로 빠진 확인 · 데이터 변형 · 변형 시나리오 · 코드 바뀜 제안을 목록으로 보이고, 여러 개 고르기로 물어 본 뒤 고른 것만 반영해 줘.',
+  ].filter(Boolean).join('\n')
+}
+
+function rulePrompt(suite, rule) {
+  return `UI 테스트 묶음 "${suite.name}"(${suite.id}) 에서 아직 어느 시나리오도 다루지 않는 ${KIND_NAME[rule.kind]} 규칙 "${rule.text}" 를 다루도록 보강해 줘. ui-test 스킬의 보강 순서대로 제안(변형 시나리오 · 데이터 변형 등)을 목록으로 보이고 여러 개 고르기로 물어 본 뒤, 고른 것만 반영하고 suite.md ## 규칙 의 덮는 시나리오도 고쳐 줘.`
+}
+
+function coverageView(suite) {
+  const c = suite.coverage
+  if (!c) return undefined
+  const bar = (part) => el('span', { class: 'bar', 'aria-hidden': 'true' }, el('div', { style: `width:${part.total ? Math.round((part.covered / part.total) * 100) : 0}%` }))
+  return el(
+    'div',
+    { class: 'cov', 'aria-label': '규칙 덮임 (어림값)' },
+    c.validation.total ? el('span', { class: 'row' }, `검증 규칙 ${c.validation.covered} / ${c.validation.total}`, bar(c.validation)) : '',
+    c.business.total ? el('span', { class: 'row' }, `업무 규칙 ${c.business.covered} / ${c.business.total}`, bar(c.business)) : '',
+  )
+}
+
+const LAST_TAG = { passed: ['성공', 'ok'], failed: ['실패', 'bad'], stopped: ['멈춤', 'wait'] }
+
+function scenarioRow(suite, item, running) {
+  const [lastText, lastTone] = LAST_TAG[item.lastStatus] || []
+  return el(
+    'div',
+    { class: 'scn' },
+    el('span', { style: 'min-width:0;overflow-wrap:anywhere' }, item.name, item.kind ? el('span', { class: 'sub' }, ` · ${item.kind}`) : ''),
+    el(
+      'span',
+      { class: 'acts' },
+      !item.hasCode ? el('span', { class: 'tag' }, '코드 없음') : '',
+      item.stale ? el('span', { class: 'tag warn', title: '시나리오가 코드를 만든 뒤 바뀌었습니다 — 다음 수행 전에 AI 가 코드를 다시 만듭니다' }, '코드 낡음') : '',
+      item.changed?.length ? el('span', { class: 'tag warn', title: item.changed.map((change) => change.path).join('\n') }, '코드 바뀜') : '',
+      item.rows ? el('span', { class: 'tag' }, `데이터 ${item.rows}행`) : '',
+      item.checks ? el('span', { class: 'tag' }, `확인 ${item.checks}`) : '',
+      lastText ? el('span', { class: `st ${lastTone}` }, lastText) : '',
+      item.lastStatus === 'failed' ? btn('AI 에게 맡기기', () => ask(fixPrompt(suite, item)), { class: 'small primary', disabled: running, title: '새 대화에서 실패 원인을 가르고, 낡은 테스트면 고칩니다' }) : '',
+      btn('보강', () => ask(enrichPrompt(suite, item)), { class: 'small', disabled: running, title: '새 대화에서 보강 제안을 받고 고릅니다' }),
+    ),
+  )
+}
+
+async function stop() {
+  await tool('stop').catch(() => undefined)
+}
+
+function suiteCard(suite) {
+  const failedLast = suite.scenarios.filter((item) => item.lastStatus === 'failed').length
+  const last = suite.runs[0]
+  const running = state.progress?.running
+  const menuOpen = state.menu === suite.id
+  const menu = menuOpen
+    ? el(
+        'div',
+        { class: 'menu', role: 'menu' },
+        btn(`전체 (${suite.scenarios.length})`, () => rerun(suite.id), { role: 'menuitem' }),
+        btn(`실패만 (${failedLast})`, () => rerun(suite.id, 'failed'), { role: 'menuitem', disabled: !failedLast }),
+        btn('시나리오 고르기…', () => ((state.menu = ''), (state.picking = { suite: suite.id, chosen: new Set(suite.scenarios.map((item) => item.id)) }), render()), { role: 'menuitem' }),
+        el('hr'),
+        btn(`${state.headed ? '●' : '○'} 보면서`, () => ((state.headed = true), render()), { role: 'menuitemradio', 'aria-checked': String(state.headed) }),
+        btn(`${state.headed ? '○' : '●'} 화면 없이`, () => ((state.headed = false), render()), { role: 'menuitemradio', 'aria-checked': String(!state.headed) }),
+      )
+    : undefined
+  const picking = state.picking?.suite === suite.id
+    ? el(
+        'div',
+        { class: 'pick' },
+        suite.scenarios.map((item) =>
+          el(
+            'label',
+            {},
+            el('input', { type: 'checkbox', checked: state.picking.chosen.has(item.id), onchange: (event) => (event.target.checked ? state.picking.chosen.add(item.id) : state.picking.chosen.delete(item.id)) }),
+            `${item.name}`,
+            item.hasCode ? '' : el('span', { class: 'sub' }, ' · 코드 없음'),
+          ),
+        ),
+        el('div', { class: 'head' }, btn('취소', () => ((state.picking = undefined), render())), btn(`고른 것 수행 (${state.headed ? '보면서' : '화면 없이'})`, () => rerun(suite.id, [...state.picking.chosen]), { class: 'primary', disabled: running })),
+      )
+    : undefined
+  return el(
+    'section',
+    { class: `card${state.progress?.suite === suite.id && running ? ' on' : ''}`, 'aria-label': suite.name },
+    el(
+      'div',
+      { class: 'head' },
+      el('div', { style: 'display:flex;flex-direction:column;gap:2px;min-width:0' }, el('h2', {}, suite.name), el('span', { class: 'sub' }, [suite.request && `"${suite.request}"`, suite.created && `${suite.created} 만듦`, `시나리오 ${suite.scenarios.length}`].filter(Boolean).join(' · '))),
+      coverageView(suite),
+      el('div', { class: 'menuwrap' }, btn('다시 수행 ▾', () => ((state.menu = menuOpen ? '' : suite.id), render()), { class: 'primary', 'aria-haspopup': 'menu', 'aria-expanded': String(menuOpen), disabled: running }), menu),
+    ),
+    el('div', {}, suite.scenarios.map((item) => scenarioRow(suite, item, running))),
+    suite.coverage?.uncovered?.length
+      ? el(
+          'div',
+          { class: 'rules' },
+          '안 다룬 규칙:',
+          suite.coverage.uncovered.map((rule) => btn(`${KIND_NAME[rule.kind]} · ${rule.text}`, () => ask(rulePrompt(suite, rule)), { class: 'link', title: '눌러서 이 규칙으로 보강 제안 받기' })),
+          el('span', {}, '— 규칙 목록은 AI 가 코드에서 뽑은 어림값입니다(코드 커버리지 아님)'),
+        )
+      : '',
+    el('div', { class: 'line' }, last ? ['마지막: ', when(last.startedAt), ' · ', ...counts(last.passed, last.failed), ' · ', cmpLine(last.compare)] : '아직 수행 안 함'),
+    picking,
+    suite.runs.length
+      ? el(
+          'div',
+          {},
+          suite.runs.slice(0, 5).map((run) => el('div', { class: 'hist' }, el('span', {}, when(run.startedAt)), el('span', {}, ...counts(run.passed, run.failed), ' ', run.interrupted ? el('span', { class: 'st bad', title: run.interrupted }, '중단됨') : '', ' ', run.compare ? `새로 실패 ${run.compare.newFail.length}` : '처음 수행'), btn('결과서', () => openReport(run.report), { class: 'link' }))),
+          suite.runs.length > 5 ? el('span', { class: 'sub' }, `외 ${suite.runs.length - 5} (최근 20 개까지 남김)`) : '',
+        )
+      : '',
+  )
+}
+
+const STEP_MARK = { passed: ['✓', 'var(--ok)'], failed: ['✕', 'var(--bad)'], db: ['◇', 'var(--db)'], 'not-run': ['–', 'var(--faint)'] }
+const CASE_TAG = { passed: ['성공', 'ok'], failed: ['실패', 'bad'], running: ['수행 중', 'run'], waiting: ['대기', 'wait'], stopped: ['멈춤', 'wait'], 'no-code': ['코드 없음', 'wait'] }
+
+function stepRows(steps, live) {
+  const p = state.progress
+  const img = (name, fail) => {
+    const url = name && state.thumbs.get(`${p.suite}/${p.runId}/${name}`)
+    return url && url !== 'loading' ? el('img', { class: `thumb${fail ? ' fail' : ''}`, src: url, alt: fail ? '실패 순간' : '스크린샷' }) : el('span', { class: 'thumb' })
+  }
+  return steps.map((step) => {
+    const [mark, color] = step.status === 'passed' && live && step === steps.at(-1) && !step.shot ? ['…', 'var(--accent)'] : STEP_MARK[step.status] || ['·', 'var(--faint)']
+    return el(
+      'div',
+      { class: 'step' },
+      el('span', { 'aria-hidden': 'true', style: `color:${color}` }, mark),
+      el('span', {}, step.title, step.status === 'db' ? el('span', { class: 'sub' }, ' · 대화에서만 확인') : '', step.error ? el('div', { class: 'err' }, step.error) : ''),
+      step.failShot ? img(step.failShot, true) : step.shot ? img(step.shot, false) : el('span', { class: 'thumb' }),
+    )
+  })
+}
+
+function progressView() {
+  const p = state.progress
+  if (!p || !p.cases?.length) return undefined
+  const done = p.cases.filter((item) => !['waiting', 'running'].includes(item.status)).length
+  const current = p.cases.find((item) => item.status === 'running')
+  return el(
+    'div',
+    { style: 'display:flex;flex-direction:column;gap:8px' },
+    el('div', { class: 'head' }, el('b', {}, `${p.running ? '지금 수행' : '마지막 수행'} · ${p.suite} · ${when(p.startedAt)} 시작`), p.running ? btn('멈추기', stop) : p.report ? btn('결과서 열기', () => openReport(p.report), { class: 'primary' }) : ''),
+    el('div', { class: 'sub' }, `${p.browser || ''} · ${p.headed ? '보이게' : '화면 없이'}`),
+    p.running ? el('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': done, 'aria-valuemin': 0, 'aria-valuemax': p.cases.length, 'aria-label': '수행 진행' }, el('div', { style: `width:${Math.round((done / p.cases.length) * 100)}%` })) : '',
+    p.running ? el('span', { class: 'line' }, `${done} / ${p.cases.length} 수행${current ? ` — ${current.title} · 단계 ${current.steps.length}` : ''}`) : '',
+    p.error ? el('div', { class: 'msg bad' }, p.error) : '',
+    p.stale?.length ? el('div', { class: 'msg', style: 'background:var(--warn-bg);color:var(--warn)' }, `코드 낡음 상태로 돌렸습니다: ${p.stale.join(', ')} — 대화에서 코드를 다시 만들게 하세요`) : '',
+    p.cases.map((item) => {
+      const [label, tone] = CASE_TAG[item.status] || [item.status, 'wait']
+      return el(
+        'section',
+        { class: 'case' },
+        el('header', {}, el('span', {}, item.title), el('span', { class: `st ${tone}` }, label, item.durationMs ? ` · ${sec(item.durationMs)}` : '')),
+        (item.rows ? item.rows.map((row) => [el('div', { class: 'rowhead' }, el('span', {}, `${row.row}행 — ${row.label}`), el('span', { class: `st ${(CASE_TAG[row.status] || [])[1] || 'wait'}` }, (CASE_TAG[row.status] || [row.status])[0])), stepRows(row.steps, p.running && item.status === 'running')]) : stepRows(item.steps, p.running && item.status === 'running')),
+        item.error && !item.steps.some((step) => step.error) ? el('div', { class: 'step', style: 'grid-template-columns:1fr' }, el('span', { class: 'err' }, item.error)) : '',
+      )
+    }),
+  )
+}
+
+function render() {
+  const app = document.getElementById('app')
+  const data = state.data
+  const main = el('main')
+  if (state.error) main.append(el('div', { class: 'msg bad' }, state.error), btn('다시 읽기', load))
+  else if (!data) main.append(el('div', { class: 'card line' }, '불러오는 중…'))
+  else {
+    main.append(
+      el('div', { class: 'head' }, el('b', { style: 'font-size:13px' }, `테스트 묶음 ${data.suites.length}`), btn('새로 고침', load)),
+      el('p', { class: 'note' }, '읽는 곳: ', el('code', {}, data.testDir), ' · 결과서: ', el('code', {}, data.reportDir), ' · ', data.baseUrl || '대상 주소 없음', ' · ', data.browser, ' (베타)'),
+    )
+    if (state.message) main.append(el('div', { class: 'msg' }, state.message))
+    const progress = progressView()
+    if (progress) main.append(progress)
+    if (!data.suites.length) main.append(el('div', { class: 'card line' }, '아직 묶음이 없습니다. 대화에서 "가입설계 화면 테스트 구성해 줘" 처럼 화면을 가리켜 요청하세요.'))
+    main.append(...data.suites.map(suiteCard))
+    main.append(el('p', { class: 'note' }, 'AI 없이 돌리기: 묶음의 suite.md 에 적힌 명령으로 CI 에서도 같은 묶음을 돌립니다.'))
+  }
+  app.replaceChildren(main)
+}
+
+addEventListener('click', (event) => {
+  if (state.menu && !event.target.closest('.menuwrap')) {
+    state.menu = ''
+    render()
+  }
+})
+
+void load().then(poll)
+</script>
+</body>
+</html>

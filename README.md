@@ -12,12 +12,13 @@ Lite Harness(데스크탑 앱)에 설치하는 확장도 이 저장소에서 받
 ## 구조
 
 ```
-extensions/<폴더>/      확장 원본 — extension.json + 진입 파일(index.html · locale.json …)
+extensions/<id>/         확장 원본 — extension.json(플러그인은 plugin.json) + 진입 파일(index.html · locale.json …). 분류 폴더 없이 id 하나로
+extensions/<id>/build.mjs 빌드가 필요한 확장만 — build/<id>[-<platform>].zip 을 만든다 (아래 참고)
 dist/<id>-<version>.zip  내보낸 zip (npm run release 가 만든다, 최신 버전만 남긴다)
 categories.json          확장 id → 분류(game · dev-tool · locale). release 가 catalog 의 category 로 싣는다
 catalog.json             앱이 읽는 목록 — id · name · description · category · details · permissions · type · size · version · zip · sha256 · changes (details·permissions·size 는 설치 전 화면에 보인다)
-scripts/release.mjs      내보내기 스크립트 (의존성 없음, 시스템 zip 사용)
-sources/                 빌드가 따로 필요한 확장의 원본 (catalog 에 없다 — 아래 참고)
+scripts/release.mjs      내보내기 스크립트 (시스템 zip 사용, build.mjs 가 있으면 먼저 돌린다)
+package.json             build.mjs 가 쓰는 의존성 (esbuild · MCP SDK · DB 드라이버 · playwright-core) — 버전 고정. 빌드 전에 npm ci
 ```
 
 `catalog.json` 모양:
@@ -72,24 +73,20 @@ git add -A && git commit -m "<id> 1.2.3" && git push
 
 ## 빌드가 따로 필요한 확장
 
-- **SQL 튜닝** (`extensions/sql-tuning/`) — litecode 저장소의 `extensions/dev-tools/sql-tuning` 을 `node scripts/pack-sql-tuning.mjs` 로 묶은 결과(서버가 한 파일로 묶여 있다)를 넣었다. 원본을 고치면 litecode 쪽에서 다시 묶어 이 폴더를 바꾼 뒤 `npm run release sql-tuning`.
-- **SonarQube** (`sources/sonarqube/`) — 분석기(Java 런타임 + SonarScanner, 약 100MB)를 플랫폼별로 넣어 묶는다(묶는 법은 그 폴더의 README, litecode 의 `scripts/fetch-sonarqube.mjs`). 묶은 zip 은 플랫폼을 붙여 올린다:
+폴더에 `build.mjs` 가 있으면 `npm run release <id>` 가 그것을 먼저 돌리고, 나온 `build/<id>[-<platform>].zip` 을 그대로 올린다. 처음 한 번 `npm ci` 로 의존성을 받는다.
 
-  ```bash
-  npm run release -- --zip <묶은 sonarqube.zip> --platform darwin-arm64
-  ```
+| 확장 | 하는 일 | 올리는 법 |
+|---|---|---|
+| `sql-tuning` | MCP 서버를 드라이버(oracledb · pg)째 한 파일로 묶는다 | `npm run release sql-tuning` |
+| `ui-test` | MCP 서버를 묶고 playwright-core 를 옆에 싣는다 (브라우저는 PC 의 Chrome · Edge) | `npm run release ui-test` |
+| `chrome-browser` | Playwright MCP 를 레지스트리에서 고정 버전 · sha512 로 받아 싣는다 | `npm run release chrome-browser` |
+| `sonarqube` | 분석기(Java 런타임 + SonarScanner, 풀어서 약 100MB)를 플랫폼별로 받아 싣는다 | `npm run release -- sonarqube --platform darwin-arm64` |
 
-  catalog 항목에 `"platform": "darwin-arm64"` 가 붙고, 앱은 지금 PC 의 플랫폼(`darwin-arm64` · `darwin-x64` · `win32-x64` …)과 같은 항목만 보인다. 지금은 mac(Apple 칩)판만 있다.
-- **Chrome in Lite Harness** (`sources/chrome-browser/`) — AI 가 전용 Chrome 창을 조종하는 확장. 동봉 Playwright MCP(`@playwright/mcp` 0.0.83 + `playwright-core`, 순수 JS)를
-  레지스트리에서 고정 버전·sha512 로 받아 zip 에 넣는다(폐쇄망에서도 돈다). `server.mjs` 는 중계 MCP 서버다 — 위험한 도구(임의 코드·파일 올리기 등 13개)를
-  목록에서 빼고 불러도 거절하며, 남는 도구는 12개다. 플랫폼 구분 없음:
-
-  ```bash
-  node sources/chrome-browser/build.mjs          # build/chrome-browser.zip
-  npm run release -- --zip build/chrome-browser.zip
-  ```
-
-  Playwright MCP 버전을 올리면 도구 이름이 바뀔 수 있다 — `server.mjs` 의 `DENIED` 를 새 `tools/list` 와 다시 댄다.
+- sql-tuning 에 사내 SQL 표준을 넣으려면 `node extensions/sql-tuning/build.mjs --standard <표준.md>` 로 묶고 `npm run release -- --zip build/sql-tuning.zip`.
+- sonarqube 는 플랫폼 전용이라 `--platform`(`darwin-arm64` · `darwin-x64` · `win32-x64`)이 꼭 있어야 하고, `--all` 은 건너뛴다. 분석기는 `extensions/sonarqube/fetch-runtime.mjs` 가 망 밖에서 버전 · sha256 고정으로 받아 `build/vendor/` 에 둔다(git 에는 넣지 않는다, 받으면 수 GB). 지금은 mac(Apple 칩)판만 검증됐다.
+- chrome-browser 의 Playwright MCP 버전을 올리면 도구 이름이 바뀔 수 있다 — `server.mjs` 의 `DENIED` 를 새 `tools/list` 와 다시 댄다.
+- 빌드가 필요한 확장의 테스트는 `extensions/<id>/tests/` 에 있다. `npm test`(vitest) 로 돌리고, zip 에는 들어가지 않는다(build.mjs 가 고른 파일만 싣는다).
+- release 는 대상 전부의 분류를 먼저 확인하고 나서 빌드한다. 하나라도 빠지면 dist 와 catalog 를 건드리지 않고 멈춘다.
 
 ## catalog 항목의 category
 

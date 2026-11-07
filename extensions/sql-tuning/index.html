@@ -4,133 +4,93 @@
 <meta charset="utf-8">
 <title>SQL 튜닝</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--text:#1c1f26;--sub:#6b7180;--faint:#9aa0ab;--line:#e3e5ea;--soft:#eef0f4;--ok:#23774a;--ok-bg:#e9f6ee;--bad:#a12a2f;--bad-bg:#fdecec;--btn:#1c1f26;--btn-text:#fff;--accent:#3d6fe0;--accent-bg:#e8eefc;--shadow:0 6px 18px rgba(0,0,0,.08)}
-@media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f2228;--text:#e8eaf0;--sub:#a3a9b5;--faint:#7c8290;--line:#2e323a;--soft:#2a2e36;--ok:#6fd39b;--ok-bg:#1d3327;--bad:#ff8a8f;--bad-bg:#3a2224;--btn:#e8eaf0;--btn-text:#16181d;--accent:#7aa2ff;--accent-bg:#1f2943;--shadow:0 6px 18px rgba(0,0,0,.4);color-scheme:dark}}
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c1f26;--sub:#5f6470;--faint:#80868f;--line:#e3e5ea;--soft:#eef0f4;--ok:#23774a;--ok-bg:#e9f6ee;--bad:#a12a2f;--bad-bg:#fdecec;--warn:#8a5200;--warn-bg:#fff6e8;--btn:#1c1f26;--btn-text:#fff;--accent:#3566d6;--accent-bg:#e4edfd;--rule:#6b4cc6}
+@media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f2228;--text:#e8eaf0;--sub:#b0b6c1;--faint:#8a909c;--line:#2e323a;--soft:#2a2e36;--ok:#6fd39b;--ok-bg:#1d3327;--bad:#ff8a8f;--bad-bg:#3a2224;--warn:#f0a53a;--warn-bg:rgba(240,165,58,.14);--btn:#e8eaf0;--btn-text:#16181d;--accent:#7ea4f4;--accent-bg:rgba(107,151,242,.18);--rule:#b29cf3;color-scheme:dark}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif}
-main{display:flex;flex-direction:column;gap:12px;padding:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.grow{flex:1;min-width:0}
-h1{margin:0;font-size:15px;font-weight:600}
-h2{margin:0;font-size:13px;font-weight:600}
-.sub{color:var(--sub);font-size:12px}
-code,.mono{font:11.5px ui-monospace,Menlo,monospace}
-/* 저장 상태 띠 */
-.band{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--accent-bg);font-size:12.5px;min-width:0}
-.band .grow{overflow-wrap:anywhere}
-.band.off{background:var(--soft);color:var(--sub)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0}
-.dot.off{background:var(--faint)}
-/* 칸 */
-.f{display:flex;flex-direction:column;gap:3px;min-width:0}
-.f>label,.label{font-size:11.5px;color:var(--sub)}
-.opt{color:var(--faint)}
-input{width:100%;min-width:0;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font:12px ui-monospace,Menlo,monospace}
-input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
-.g2.hp{grid-template-columns:minmax(0,1fr) 84px}
-fieldset{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:8px;min-width:0}
-legend{padding:0;margin-bottom:6px;font-size:11.5px;font-weight:700;color:var(--faint);letter-spacing:.04em}
-.secret{display:flex;align-items:center;gap:6px;height:30px;padding:0 4px 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
-.secret:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.secret input{border:0;height:28px;padding:0;box-shadow:none!important}
-.eye{border:0;background:none;height:auto;padding:0 6px;color:var(--accent);font-size:11.5px}
-/* DBMS 드롭다운 */
-.dd{position:relative}
-.dd-button{width:100%;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-align:left}
-.dd-button[aria-expanded=true]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.logo{width:20px;height:20px;border-radius:5px;display:inline-grid;place-items:center;font:700 11px -apple-system,system-ui,sans-serif;background:var(--soft);color:var(--sub);flex-shrink:0}
-.logo.oracle{background:#c74634;color:#fff}
-.logo.postgres{background:#336791;color:#fff}
-.ver{font-size:11.5px;color:var(--faint)}
-.caret{color:var(--sub);font-size:11px}
-.dd-menu{position:absolute;z-index:5;left:0;right:0;top:38px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:1px;box-shadow:var(--shadow)}
-.dd-search{display:flex;align-items:center;gap:6px;padding:0 6px 4px;margin-bottom:4px;border-bottom:1px solid var(--line)}
-.dd-search input{border:0;height:28px;padding:0;font:12.5px -apple-system,system-ui,sans-serif;box-shadow:none!important}
-.dd-group{font-size:11px;font-weight:700;color:var(--faint);padding:6px 8px 2px;letter-spacing:.04em}
-.dd-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:0;border-radius:6px;background:none;color:var(--text);font:inherit;font-size:13px;text-align:left;cursor:pointer;width:100%}
-.dd-item:hover:not(:disabled),.dd-item[aria-selected=true]{background:var(--accent-bg)}
-.dd-item:disabled{color:var(--faint);cursor:default}
-.check{color:var(--accent);font-weight:700}
-.soon{font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:0 7px}
-.dd-empty{padding:6px 8px;color:var(--faint);font-size:12px}
-/* JDBC 붙여넣기 */
-.paste{display:flex;align-items:center;gap:8px;padding:0 6px 0 10px;border:1px dashed var(--line);border-radius:8px}
-.paste:focus-within{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.paste-ic{color:var(--accent);font-weight:700}
-.paste input{border:0;padding:0;height:32px;font:12px -apple-system,system-ui,sans-serif;box-shadow:none!important}
-.paste input::placeholder{color:var(--sub)}
-/* 버튼 · 결과 */
-button{font:inherit;cursor:pointer;border-radius:8px;height:30px;padding:0 12px;border:1px solid var(--line);background:var(--card);color:var(--text);white-space:nowrap}
-button.primary{border:0;background:var(--btn);color:var(--btn-text);font-weight:600}
-button.link{border:0;background:none;height:auto;padding:0;color:var(--accent);font-weight:600;font-size:12px}
-button.quiet{border:0;background:none;height:auto;padding:0;color:var(--sub);text-decoration:underline;font-size:12px}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+main{display:flex;flex-direction:column;gap:12px;padding:14px;min-height:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+h2{margin:0;font-size:12px;font-weight:600;color:var(--sub)}
+.sub{font-size:12.5px;color:var(--sub);overflow-wrap:anywhere}
+.faint{color:var(--faint)}
+.tag{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--accent-bg);color:var(--accent);white-space:nowrap}
+.tag.off{background:var(--soft);color:var(--sub)}
+code{font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--soft);border-radius:5px;padding:0 5px}
+.rule{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;font-size:12.5px;padding:5px 0;border-top:1px solid var(--line)}
+.rule b{font:600 11.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--rule)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.conn{display:flex;align-items:center;gap:8px;font-size:12.5px;overflow-wrap:anywhere}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex-shrink:0}
+.dot.ok{background:var(--ok)}
+.dot.bad{background:var(--bad)}
+button{font:inherit;font-size:12.5px;cursor:pointer;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);white-space:nowrap}
+button.primary{background:var(--btn);border-color:var(--btn);color:var(--btn-text);font-weight:600}
 button:disabled{opacity:.5;cursor:default}
-.lock{font-size:11.5px;color:var(--faint)}
-.ok{padding:8px 10px;border-radius:8px;background:var(--ok-bg);color:var(--ok);font-size:12.5px;overflow-wrap:anywhere}
-.error{padding:8px 10px;border-radius:8px;background:var(--bad-bg);color:var(--bad);font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}
-.error .raw{display:block;margin-top:6px;opacity:.8;font:11.5px ui-monospace,Menlo,monospace}
-/* 탭 */
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 2px}
-.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;height:auto;padding:6px 12px;margin-bottom:-1px;color:var(--sub);font-size:13px}
-.tabs button[aria-selected=true]{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
-/* 사내 표준 */
-.drop{border:1.5px dashed var(--line);border-radius:10px;padding:18px 12px;text-align:center;display:flex;flex-direction:column;gap:4px;color:var(--sub);font-size:12.5px}
-.drop b{color:var(--text);font-size:13.5px}
-.drop.over{border-color:var(--accent);background:var(--accent-bg)}
-.doc{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:start}
-.doc-ic{width:34px;height:42px;border-radius:5px;background:var(--accent-bg);color:var(--accent);display:grid;place-items:center;font:700 10px ui-monospace,Menlo,monospace}
-.doc h3{margin:0;font-size:13.5px;overflow-wrap:anywhere}
-.rules{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
-.rules code{background:var(--soft);padding:0 5px;border-radius:4px}
-.viewer{margin:0;max-height:320px;overflow:auto;padding:10px;border-radius:8px;background:var(--soft);font:11.5px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
-.note{padding:8px 10px;border-radius:8px;background:var(--soft);color:var(--sub);font-size:12px}
-/* 결과 */
-.res{display:flex;flex-direction:column;gap:6px}
-.conv{border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
-.conv.open{border-color:var(--accent)}
-.conv-head{display:flex;align-items:center;gap:8px;width:100%;height:auto;padding:9px 11px 4px;border:0;border-radius:0;background:none;color:var(--text);text-align:left}
-.conv-title{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chev{color:var(--faint);font-size:10px;width:10px}
-.conv-badges{display:flex;gap:4px;flex-wrap:wrap;padding:0 11px 9px 29px}
-.steps{border-top:1px solid var(--line);padding:6px 6px 8px 14px;display:flex;flex-direction:column;gap:1px}
-.step{display:flex;align-items:center;gap:8px;width:100%;height:auto;padding:5px 8px;border:0;border-radius:7px;background:none;color:var(--text);font-size:12px;text-align:left;min-width:0}
-.step:hover,.step[aria-selected=true]{background:var(--accent-bg)}
-.step.dim{color:var(--sub)}
-.step-kind{color:var(--sub);white-space:nowrap}
-.step-label{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.step-tables{padding-left:16px;display:flex;flex-direction:column;gap:1px}
-.srv{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);margin-top:-4px}
-.srv .dot{width:7px;height:7px}
-.res-time{font:11px ui-monospace,Menlo,monospace;color:var(--faint)}
-.badge{font-size:11px;font-weight:700;border-radius:999px;padding:0 7px;white-space:nowrap;color:var(--sub);background:var(--soft)}
-.badge.good{color:var(--ok);background:var(--ok-bg)}
-.badge.bad{color:var(--bad);background:var(--bad-bg)}
-.badge.warn{color:var(--accent);background:var(--accent-bg)}
-ol{margin:0;padding-left:18px}
-li{margin:2px 0}
+.msg{padding:8px 10px;border-radius:8px;font-size:12.5px;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.ok{background:var(--ok-bg);color:var(--ok)}
+.msg.bad{background:var(--bad-bg);color:var(--bad)}
+.msg.warn{background:var(--warn-bg);color:var(--warn)}
+.note{margin:0;font-size:11.5px;color:var(--faint)}
+/* 고치기 */
+.edit{display:flex;flex-direction:column;height:100vh}
+.edit-top{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.edit-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.edit-title b{font-size:13.5px}
+.seg{display:inline-flex;background:var(--soft);border-radius:8px;padding:3px;gap:2px}
+.seg button{height:26px;padding:0 10px;border:0;background:transparent;color:var(--sub);font-size:12px;border-radius:6px}
+.seg button[aria-checked=true]{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.edit-body{flex:1;display:flex;min-height:0;padding:12px 14px}
+textarea{flex:1;width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;resize:none;background:var(--card);color:var(--text)}
+textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+.preview{flex:1;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 14px;background:var(--card);font-size:13px}
+.preview h1,.preview h2,.preview h3{color:var(--text);margin:12px 0 4px}
+.preview h1{font-size:15px}.preview h2{font-size:14px}.preview h3{font-size:13px}
+.preview ul{margin:4px 0;padding-left:18px}
+.preview p{margin:6px 0}
+.edit-note{padding:0 14px 8px}
+.edit-foot{padding:10px 14px 14px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
 <body>
-<main id="app"><div class="card sub">불러오는 중…</div></main>
+<div id="app"><main><div class="card sub">불러오는 중…</div></main></div>
+<input id="picker" type="file" accept=".md,.markdown,text/markdown" hidden>
 <script>
-// SQL 튜닝 확장 패널 (2026-11-03, 설정 흐름 시안 4·5단계) — 개발 DB 연결만 맡긴다. 튜닝은 대화에서 AI 가 이 확장의 MCP 서버 도구 + sql-tuning 스킬로 한다.
-// 앱과는 통로로만 말한다: parent.postMessage({ litecode: 1, id, method, params }) → { litecode: 1, id, ok, result | error }.
-// 칸 값은 storage(db · host · port · service · user · schema), 비밀번호는 secrets(password) — extension.json 의 mcp.env 자리표시가
-// 이 키들을 MCP 서버 env 로 넘긴다(server/connect.ts databaseUrlFromEnv). 비밀번호는 앱이 암호화해 보관하고 이 패널은 다시 읽지 못한다.
-// 값을 바꾸면 앱이 다음 호출에 서버를 새 값으로 다시 띄운다.
+// SQL 튜닝 패널 (#1232, 시안 FfLzCjANQdZ6FMwVV8ekUV ④ · ④-2) — 카드 두 개: 이 프로젝트에 쓰이는 사내 SQL 표준 · DB 연결.
+// 표준: 프로젝트 파일 `.litecode/sql-standard.md`(팀이 커밋해 같이 씀, 권한 projectWrite) 가 있으면 그것, 없으면 zip 에 든 스킬의
+// references/sql-standard.md(플러그인 기본). 스킬도 같은 순서로 읽는다. 연결: 앱이 가진 설정 칸 값의 요약(비밀번호는 저장됐나만) ·
+// [연결 확인](settingsCheck) · [연결 정보 고치기](앱의 설정 폼). 앱과는 통로로만 말한다: parent.postMessage({ litecode: 1, id, method, params })
+
+const PROJECT_FILE = '.litecode/sql-standard.md'
+const BUNDLED = { skill: 'sql-tuning', path: 'references/sql-standard.md' }
+const RULE_ID = /\b[A-Z]{2,5}-\d{1,4}\b/
+const PREVIEW_RULES = 3
+const DB_NAMES = { oracle: 'Oracle', postgres: 'PostgreSQL' }
+const LABELS = { db: 'DB 종류', host: '호스트', port: '포트', service: '서비스 이름', user: '아이디', password: '비밀번호', schema: '스키마' }
+const ERRORS = {
+  'no-project': '열린 프로젝트가 없습니다',
+  'not-on': '이 프로젝트에서 SQL 튜닝이 꺼져 있습니다',
+  'permission-missing': '이 버전의 플러그인에 필요한 권한이 없습니다 — 다시 설치해 주세요',
+  'path-unsafe': '.litecode 폴더가 프로젝트 밖을 가리키거나 파일이 링크라서 쓰지 않았습니다',
+  'file-too-large': '문서가 너무 큽니다 (512KB 까지)',
+  'not-text': 'UTF-8 글이 아닙니다',
+  'no-settings': '연결 정보 칸이 없습니다',
+  'io-failed': '앱이 요청을 처리하지 못했습니다',
+}
+const errorText = (error) => ERRORS[error?.message] || error?.message || String(error)
 
 let seq = 0
 const waiting = new Map()
-window.addEventListener('message', (event) => {
+addEventListener('message', (event) => {
   const data = event.data
   if (event.source !== parent || !data || data.litecode !== 1 || !waiting.has(data.id)) return
-  const resolve = waiting.get(data.id)
+  const done = waiting.get(data.id)
   waiting.delete(data.id)
-  resolve(data)
+  done(data)
 })
-/** 통로 호출 — 실패면 Error(code) 를 던진다 */
+/** 통로 호출 — 실패면 Error(code) */
 function call(method, params) {
   const id = ++seq
   return new Promise((resolve, reject) => {
@@ -139,785 +99,319 @@ function call(method, params) {
   })
 }
 
-// 지원 DBMS — 늘어나면 여기와 서버 어댑터 · 스킬 references 만 더한다
-const DBMS = [
-  { id: 'oracle', name: 'Oracle', logo: 'O', ver: '12c 이상', port: '1521', service: 'FREEPDB1', serviceLabel: '서비스' },
-  { id: 'postgres', name: 'PostgreSQL', logo: 'P', ver: '12 이상', port: '5432', service: 'postgres', serviceLabel: 'DB 이름' },
-]
-const SOON = [
-  { name: 'MySQL · MariaDB', logo: 'M' },
-  { name: 'Tibero', logo: 'T' },
-  { name: 'SQL Server', logo: 'S' },
-  { name: 'DB2', logo: 'D' },
-]
-const FIELDS = ['db', 'host', 'port', 'service', 'user', 'schema']
-// 사내 표준 — 스킬의 참고 파일로 덧씌운다 (앱 skills.* — zip 에 든 것이 기본, 여기서 넣은 것이 우선)
-const STANDARD = { skill: 'sql-tuning', path: 'references/sql-standard.md' }
-const RULE_ID = /\b[A-Z]{2,5}-\d{1,3}\b/g
-const dbms = (id) => DBMS.find((item) => item.id === id) ?? DBMS[0]
-
-const ERROR_TEXT = {
-  'no-project': '열린 프로젝트가 없습니다 — 프로젝트를 연 뒤 다시 눌러 주세요',
-  'secrets-unavailable': '이 기기에서 비밀번호를 암호화해 보관할 수 없습니다',
-  'mcp-failed': 'MCP 서버를 쓸 수 없습니다 — 앱을 다시 켜 보세요',
-  'storage-full': '저장 공간이 꽉 찼습니다',
-  'file-too-large': '문서가 너무 큽니다 (512KB 까지)',
-}
-const text = (code) => ERROR_TEXT[code] || code
-
-/** DB 가 돌려준 오류 → 사람이 읽을 말 (원문은 아래에 둔다) */
-function friendly(detail) {
-  if (/ORA-01017|password authentication failed/i.test(detail)) return '아이디나 비밀번호가 맞지 않습니다. 비밀번호를 다시 넣고 [저장하고 연결 확인] 을 누르세요'
-  if (/ORA-12514|ORA-12505|does not exist/i.test(detail)) return '서비스 / DB 이름을 찾지 못했습니다'
-  if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|NJS-50[03]|connect timeout/i.test(detail)) return '호스트 · 포트에 닿지 못했습니다 (DB 가 켜져 있는지, 방화벽 · VPN 을 확인하세요)'
-  if (/No database connection/i.test(detail)) return '연결 정보가 아직 없습니다'
-  return undefined
+const state = {
+  project: '',
+  std: undefined, // { source: 'project' | 'bundled' | 'none', text, modified? }
+  bundledRules: 0,
+  conn: undefined, // settings.summary
+  check: undefined, // { text, isError }
+  busy: '',
+  message: undefined, // { tone, text } — 표준 카드
+  connMessage: undefined,
+  confirm: undefined, // { kind: 'reset' } | { kind: 'replace', name, text }
+  edit: undefined, // { text, mode: 'edit' | 'preview' }
 }
 
-/** query 결과 표(`A | B` 줄) → "TUNER · Oracle …" 한 줄 */
-function connectedLine(output) {
-  const lines = output.split('\n').map((line) => line.trim()).filter(Boolean)
-  const values = lines[1]?.split(' | ')
-  return values && values.length >= 2 ? `${values[0]} · ${values.slice(1).join(' · ')}` : output
-}
-
-const state = { tab: 'conn', form: blank('oracle'), saved: undefined, passwordSaved: false, show: false, check: undefined, error: undefined, busy: false, menu: false, search: '', std: undefined, stdName: '', stdView: false, stdError: undefined, stdBusy: false, results: undefined, resultsOff: false, clearing: false, resultId: undefined, resultDetail: undefined, titles: {}, groupOpen: undefined, tablesOpen: undefined, resultError: undefined, resultBusy: false, copied: false, server: undefined }
-
-function blank(db) {
-  const item = dbms(db)
-  return { db: item.id, host: '127.0.0.1', port: item.port, service: item.service, user: '', schema: '', password: '' }
-}
-
-/** 칸을 고쳤나 — 저장된 값과 다르거나 새 비밀번호를 넣었다 */
-function dirty() {
-  if (!state.saved) return false
-  return state.form.password !== '' || FIELDS.some((key) => state.form[key].trim() !== (state.saved[key] ?? ''))
-}
-
-/** JDBC 주소 → 칸 값 (Oracle thin · PostgreSQL). 못 읽으면 undefined */
-function parseJdbc(raw) {
-  const url = raw.trim()
-  let match = /^jdbc:oracle:thin:@(?:\/\/)?\[?([^\]\/:?]+)\]?(?::(\d+))?[\/:]([^?\s]+)/i.exec(url)
-  if (match) return { db: 'oracle', host: match[1], port: match[2] || '1521', service: match[3] }
-  match = /^jdbc:postgresql:\/\/\[?([^\]\/:?]+)\]?(?::(\d+))?\/([^?\s]+)(?:\?(.*))?$/i.exec(url)
-  if (match) {
-    const schema = new URLSearchParams(match[4] || '').get('currentSchema') || ''
-    return { db: 'postgres', host: match[1], port: match[2] || '5432', service: decodeURIComponent(match[3]), ...(schema && { schema }) }
+/** 규칙 — 규칙 번호가 든 줄마다 첫 번호 하나 (같은 번호는 한 번) */
+function rulesOf(text) {
+  const seen = new Set()
+  const rules = []
+  for (const line of text.split('\n')) {
+    const match = RULE_ID.exec(line)
+    if (!match || seen.has(match[0])) continue
+    seen.add(match[0])
+    const rest = line.slice(match.index + match[0].length).replace(/^[\s*_:.)\]—-]+/, '').replace(/[*_`]/g, '').trim()
+    rules.push({ id: match[0], text: rest })
   }
-  return undefined
+  return rules
 }
 
-async function load() {
-  const keys = [...FIELDS, 'passwordSaved']
-  const values = await Promise.all(keys.map((key) => call('storage.get', { key })))
-  const stored = Object.fromEntries(keys.map((key, index) => [key, values[index]]))
-  state.passwordSaved = stored.passwordSaved === true
-  if (typeof stored.db === 'string') {
-    state.form = { ...blank(stored.db), password: '' }
-    for (const key of FIELDS) if (typeof stored[key] === 'string') state.form[key] = stored[key]
-    state.saved = Object.fromEntries(FIELDS.map((key) => [key, typeof stored[key] === 'string' ? stored[key] : '']))
-  }
-}
-
-async function save() {
-  const form = state.form
-  if (!form.host.trim() || !form.service.trim() || !form.user.trim()) return show('호스트 · 서비스 / DB 이름 · 아이디를 넣어 주세요')
-  if (form.port.trim() && !/^\d{1,5}$/.test(form.port.trim())) return show('포트는 숫자로 넣어 주세요')
-  if (!form.password && !state.passwordSaved) return show('비밀번호를 넣어 주세요')
-  await busy(async () => {
-    for (const key of FIELDS) {
-      const value = form[key].trim()
-      if (value) await call('storage.set', { key, value })
-      else await call('storage.delete', { key })
-    }
-    if (form.password) {
-      await call('secrets.set', { key: 'password', value: form.password })
-      await call('storage.set', { key: 'passwordSaved', value: true })
-      state.passwordSaved = true
-      form.password = ''
-    }
-    state.saved = Object.fromEntries(FIELDS.map((key) => [key, form[key].trim()]))
-    await check()
-  })
-}
-
-async function check() {
-  state.check = { phase: 'checking' }
-  render()
-  const sql = state.form.db === 'postgres' ? 'SELECT current_user AS account, version() AS version' : 'SELECT USER AS account, banner AS version FROM v$version WHERE ROWNUM = 1'
-  try {
-    const output = await call('mcp.call', { tool: 'query', args: { sql } })
-    state.check = output.isError ? { phase: 'failed', title: friendly(output.text), detail: output.text } : { phase: 'ok', detail: connectedLine(output.text) }
-  } catch (error) {
-    state.check = { phase: 'failed', detail: text(error.message) }
-  }
-  void loadServer() // 연결 확인이 서버를 띄웠을 수 있다
-}
-
-async function clear() {
-  await busy(async () => {
-    for (const key of [...FIELDS, 'passwordSaved']) await call('storage.delete', { key })
-    await call('secrets.delete', { key: 'password' })
-    state.form = blank('oracle')
-    state.saved = undefined
-    state.passwordSaved = false
-    state.check = undefined
-  })
-}
-
-async function busy(work) {
-  state.busy = true
-  state.error = undefined
-  render()
-  try {
-    await work()
-  } catch (error) {
-    state.error = text(error.message)
-  } finally {
-    state.busy = false
-    render()
-  }
-}
-
-function show(error) {
-  state.error = error
-  render()
-}
-
-/** 칸을 고쳤을 때 — 띠만 다시 그리고, 옛 확인 결과는 지운다 (입력 중인 칸의 포커스를 지키려고 전체를 다시 그리지 않는다) */
-function edited() {
-  if (state.check && dirty()) {
-    state.check = undefined
-    document.getElementById('result')?.replaceChildren()
-  }
-  document.getElementById('band')?.replaceWith(band())
-}
-
-const el = (tag, attrs = {}, ...children) => {
-  const node = document.createElement(tag)
-  for (const [key, value] of Object.entries(attrs)) {
-    if (value === undefined || value === false) continue
-    if (key.startsWith('on')) node.addEventListener(key.slice(2), value)
-    else if (key === 'class') node.className = value
-    else if (key === 'value') node.value = value
-    else node.setAttribute(key, value === true ? '' : value)
-  }
-  for (const child of children.flat(Infinity)) if (child !== undefined && child !== null && child !== false) node.append(child)
-  return node
-}
-
-function input(key, label, attrs = {}) {
-  return el('div', { class: 'f' },
-    el('label', { for: key }, label),
-    el('input', { id: key, value: state.form[key], autocomplete: 'off', spellcheck: 'false', oninput: (event) => ((state.form[key] = event.target.value), edited()), ...attrs }),
-  )
-}
-
-function band() {
-  if (!state.saved) return el('div', { id: 'band', class: 'band off' }, el('span', { class: 'dot off' }), el('span', { class: 'grow' }, '개발 DB 가 아직 없습니다. 아래에 넣고 [저장하고 연결 확인] 을 누르세요.'))
-  if (dirty()) return el('div', { id: 'band', class: 'band off' }, el('span', { class: 'dot off' }), el('span', { class: 'grow' }, el('b', {}, '저장 안 됨'), ' — 바꾼 칸이 있습니다. [저장하고 연결 확인] 을 누르세요.'))
-  const saved = state.saved
-  const item = dbms(saved.db)
-  const target = `${saved.user}@${saved.host}${saved.port ? `:${saved.port}` : ''}/${saved.service}`
-  return el('div', { id: 'band', class: 'band' },
-    el('span', { class: 'dot' }),
-    el('span', { class: 'grow' }, el('b', {}, '저장됨'), ` · ${item.name} · `, el('code', {}, target), saved.schema ? ` · 스키마 ${saved.schema}` : '', state.passwordSaved ? ' · 비밀번호 저장됨' : ''),
-  )
-}
-
-function pickDbms(id) {
-  const previous = dbms(state.form.db)
-  const next = dbms(id)
-  if (state.form.port === previous.port) state.form.port = next.port
-  if (state.form.service === previous.service) state.form.service = next.service
-  state.form.db = next.id
-  state.menu = false
-  state.search = ''
-  if (state.check && dirty()) state.check = undefined
-  render()
-}
-
-function menuItems() {
-  const query = state.search.trim().toLowerCase()
-  const match = (name) => !query || name.toLowerCase().includes(query)
-  const supported = DBMS.filter((item) => match(item.name))
-  const soon = SOON.filter((item) => match(item.name))
-  if (supported.length === 0 && soon.length === 0) return [el('div', { class: 'dd-empty' }, '찾는 DBMS 가 없습니다')]
-  return [
-    supported.length > 0 && el('div', { class: 'dd-group' }, '지원'),
-    supported.map((item) =>
-      el('button', { type: 'button', class: 'dd-item', role: 'option', 'aria-selected': String(item.id === state.form.db), onclick: () => pickDbms(item.id) },
-        el('span', { class: `logo ${item.id}` }, item.logo), el('span', { class: 'grow' }, item.name), el('span', { class: 'ver' }, item.ver), item.id === state.form.db && el('span', { class: 'check' }, '✓')),
-    ),
-    soon.length > 0 && el('div', { class: 'dd-group' }, '준비 중'),
-    soon.map((item) => el('button', { type: 'button', class: 'dd-item', role: 'option', disabled: true }, el('span', { class: 'logo' }, item.logo), el('span', { class: 'grow' }, item.name), el('span', { class: 'soon' }, '준비 중'))),
-  ]
-}
-
-function dbmsField() {
-  const item = dbms(state.form.db)
-  return el('div', { class: 'f dd', id: 'dd' },
-    el('span', { class: 'label' }, 'DBMS'),
-    el('button', { type: 'button', class: 'dd-button', 'aria-haspopup': 'listbox', 'aria-expanded': String(state.menu), onclick: () => ((state.menu = !state.menu), (state.search = ''), render(), state.menu && document.getElementById('dd-search')?.focus()) },
-      el('span', { class: `logo ${item.id}` }, item.logo), el('span', { class: 'grow' }, item.name), el('span', { class: 'ver' }, item.ver), el('span', { class: 'caret' }, '▾')),
-    state.menu && el('div', { class: 'dd-menu', role: 'listbox' },
-      el('div', { class: 'dd-search' }, el('span', { class: 'ver' }, '⌕'), el('input', {
-        id: 'dd-search', value: state.search, placeholder: 'DBMS 찾기', autocomplete: 'off',
-        oninput: (event) => { state.search = event.target.value; document.getElementById('dd-list').replaceChildren(...menuItems().flat(Infinity).filter(Boolean)) },
-        onkeydown: (event) => { if (event.key === 'Escape') { state.menu = false; render() } },
-      })),
-      el('div', { id: 'dd-list', style: 'display:flex;flex-direction:column;gap:1px' }, menuItems()),
-    ),
-  )
-}
-
-function pasteBox() {
-  const apply = (raw) => {
-    const parsed = parseJdbc(raw)
-    if (!parsed) return false
-    state.form = { ...state.form, schema: '', ...parsed }
-    if (state.check && dirty()) state.check = undefined
-    render()
-    return true
-  }
-  const field = el('input', {
-    id: 'jdbc', placeholder: 'JDBC 주소를 붙여 넣으면 아래 칸이 채워집니다', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'JDBC 주소',
-    oninput: (event) => apply(event.target.value),
-  })
-  return el('div', { class: 'paste' },
-    el('span', { class: 'paste-ic', 'aria-hidden': 'true' }, '⇣'),
-    el('span', { class: 'grow' }, field),
-    el('button', {
-      type: 'button', class: 'link',
-      onclick: async () => {
-        // 클립보드를 읽을 수 없으면(권한) 칸에 커서만 두고 사용자가 붙여 넣는다
-        try {
-          const clip = await navigator.clipboard.readText()
-          if (apply(clip)) return
-          if (clip) show('JDBC 주소로 읽지 못했습니다 — jdbc:oracle:thin:@//host:1521/SERVICE 또는 jdbc:postgresql://host:5432/db 모양인지 보세요')
-        } catch {}
-        field.focus()
-      },
-    }, '붙여넣기'),
-  )
-}
-
-function result() {
-  const check = state.check
-  return el('div', { id: 'result', style: 'display:contents' },
-    state.error && el('div', { class: 'error' }, state.error),
-    check?.phase === 'checking' && el('div', { class: 'note' }, '연결하는 중…'),
-    check?.phase === 'ok' && el('div', { class: 'ok' }, `연결됨 — ${check.detail}`),
-    check?.phase === 'failed' && el('div', { class: 'error' }, check.title ?? check.detail, check.title && el('span', { class: 'raw' }, check.detail)),
-  )
+const day = (ms) => {
+  const date = new Date(ms)
+  return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 async function loadStandard() {
-  const [file, name] = await Promise.all([call('skills.readFile', STANDARD), call('storage.get', { key: 'standardName' })])
-  state.std = file ?? null
-  state.stdName = typeof name === 'string' ? name : ''
+  const [own, info, bundled] = await Promise.all([
+    call('project.readFile', { path: PROJECT_FILE }).catch(() => undefined),
+    call('project.fileInfo', { path: PROJECT_FILE }).catch(() => undefined),
+    call('skills.readFile', BUNDLED).catch(() => undefined),
+  ])
+  // zip 에 든 것(또는 0.7.0 패널이 덧씌운 것 — 스킬 폴더에 그대로 실린다)
+  const shipped = typeof bundled?.text === 'string' && bundled.text.trim() ? bundled.text : ''
+  state.bundledRules = shipped ? rulesOf(shipped).length : 0
+  if (typeof own === 'string') state.std = { source: 'project', text: own, modified: info?.modified }
+  else if (shipped) state.std = { source: 'bundled', text: shipped }
+  else state.std = { source: 'none', text: '' }
 }
 
-/** 고른 · 끌어 놓은 파일 → 사내 표준으로 (.md 글만) */
-function putStandard(file) {
-  state.stdError = undefined
+async function loadConnection() {
+  state.conn = await call('settings.summary').catch((error) => ({ error: errorText(error) }))
+}
+
+async function load() {
+  const info = await call('project.info').catch(() => undefined)
+  state.project = info?.name ?? ''
+  await Promise.all([loadStandard(), loadConnection()])
+  render()
+}
+
+/** 일을 하나 — 도는 동안 버튼을 막고, 실패는 그 카드 아래 한 줄 */
+async function run(name, task, where = 'message') {
+  state.busy = name
+  state[where] = undefined
+  render()
+  try {
+    await task()
+  } catch (error) {
+    state[where] = { tone: 'bad', text: errorText(error) }
+  }
+  state.busy = ''
+  render()
+}
+
+async function saveStandard(text, done) {
+  await call('project.writeFile', { path: PROJECT_FILE, text })
+  await loadStandard()
+  state.message = { tone: 'ok', text: `${PROJECT_FILE} 를 저장했습니다 — 새 대화부터 적용됩니다` }
+  done?.()
+}
+
+function resetStandard() {
+  return run('reset', async () => {
+    await call('project.removeFile', { path: PROJECT_FILE })
+    state.confirm = undefined
+    await loadStandard()
+    state.message = { tone: 'ok', text: state.std.source === 'bundled' ? '이 프로젝트 파일을 지웠습니다 — 새 대화부터 플러그인 기본 표준을 씁니다' : '이 프로젝트 파일을 지웠습니다 — 표준 없이 답합니다' }
+  })
+}
+
+const picker = document.getElementById('picker')
+picker.addEventListener('change', () => {
+  const file = picker.files?.[0]
+  picker.value = ''
   if (!file) return
-  if (!/\.(md|markdown)$/i.test(file.name)) return showStd('Markdown(.md) 문서만 넣을 수 있습니다 — Word · PDF · HWP 는 먼저 Markdown 으로 바꿔 주세요')
+  if (!/\.(md|markdown)$/i.test(file.name)) {
+    state.message = { tone: 'bad', text: 'Markdown(.md) 문서만 넣을 수 있습니다 — Word · PDF · HWP 는 먼저 Markdown 으로 바꿔 주세요' }
+    return render()
+  }
   const reader = new FileReader()
-  reader.onerror = () => showStd('파일을 읽지 못했습니다')
-  reader.onload = async () => {
-    const body = String(reader.result ?? '')
-    if (!body.trim()) return showStd('빈 문서입니다')
-    state.stdBusy = true
+  reader.onload = () => {
+    const text = String(reader.result ?? '')
+    if (!text.trim()) state.message = { tone: 'bad', text: `${file.name} 가 비어 있습니다` }
+    else state.confirm = { kind: 'replace', name: file.name, text }
     render()
-    try {
-      await call('skills.writeFile', { ...STANDARD, text: body })
-      await call('storage.set', { key: 'standardName', value: file.name })
-      state.stdView = false
-      await loadStandard()
-    } catch (error) {
-      state.stdError = text(error.message)
-    } finally {
-      state.stdBusy = false
-      render()
-    }
+  }
+  reader.onerror = () => {
+    state.message = { tone: 'bad', text: `${file.name} 를 읽지 못했습니다` }
+    render()
   }
   reader.readAsText(file)
-}
+})
 
-async function dropStandard() {
-  state.stdBusy = true
-  state.stdError = undefined
-  render()
-  try {
-    await call('skills.deleteFile', STANDARD)
-    await call('storage.delete', { key: 'standardName' })
-    state.stdView = false
-    await loadStandard()
-  } catch (error) {
-    state.stdError = text(error.message)
-  } finally {
-    state.stdBusy = false
-    render()
+// --- 그리기 ---
+
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag)
+  for (const [key, value] of Object.entries(props)) {
+    if (value === undefined || value === false) continue
+    if (key.startsWith('on')) node.addEventListener(key.slice(2), value)
+    else if (key === 'class') node.className = value
+    else node.setAttribute(key, value === true ? '' : value)
   }
+  for (const child of children.flat()) if (child !== undefined && child !== null && child !== false) node.append(child)
+  return node
 }
-
-function showStd(message) {
-  state.stdError = message
-  render()
-}
-
-const kb = (text) => `${Math.max(1, Math.round(new Blob([text]).size / 1024))}KB`
-const when = (at) => {
-  const date = new Date(at)
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
+const button = (text, onclick, { primary = false, disabled = false } = {}) => el('button', { type: 'button', class: primary ? 'primary' : undefined, disabled: disabled || !!state.busy, onclick }, text)
+const message = (item) => item && el('div', { class: `msg ${item.tone}`, role: item.tone === 'bad' ? 'alert' : 'status' }, item.text)
 
 function standardCard() {
-  const picker = el('input', { type: 'file', accept: '.md,.markdown,text/markdown', hidden: true, onchange: (event) => putStandard(event.target.files?.[0]) })
-  const pick = () => picker.click()
   const std = state.std
-  const ids = std ? [...new Set(std.text.match(RULE_ID) ?? [])] : []
-  const drop = el('div', {
-    class: 'drop',
-    ondragover: (event) => { event.preventDefault(); event.currentTarget.classList.add('over') },
-    ondragleave: (event) => event.currentTarget.classList.remove('over'),
-    ondrop: (event) => { event.preventDefault(); event.currentTarget.classList.remove('over'); putStandard(event.dataTransfer?.files?.[0]) },
-  }, el('b', {}, std ? '다른 문서를 여기에 끌어 놓기' : '표준 문서를 여기에 끌어 놓기'), el('span', {}, '또는 ', el('button', { type: 'button', class: 'link', onclick: pick }, '파일 고르기'), ' · .md'))
-  return el('div', { class: 'card' },
-    el('h2', {}, '사내 SQL 표준'),
-    picker,
-    std === undefined && el('div', { class: 'sub' }, '불러오는 중…'),
-    std === null && [
-      el('div', { class: 'band off' }, el('span', { class: 'dot off' }), el('span', { class: 'grow' }, '사내 SQL 표준이 없습니다. 지금은 규칙 번호 없이 답합니다.')),
-      drop,
-    ],
-    std && [
-      el('div', { class: 'doc' },
-        el('div', { class: 'doc-ic' }, 'MD'),
-        el('div', { style: 'display:flex;flex-direction:column;gap:4px;min-width:0' },
-          el('h3', {}, std.source === 'set' ? state.stdName || 'sql-standard.md' : '배포본 표준'),
-          el('div', { class: 'sub' }, [ids.length > 0 && `규칙 ${ids.length}개`, kb(std.text), std.source === 'set' && std.at ? `${when(std.at)} 넣음` : '확장 zip 에 들어 있음'].filter(Boolean).join(' · ')),
-          ids.length > 0 && el('div', { class: 'rules' }, ids.slice(0, 6).map((id) => el('code', {}, id)), ids.length > 6 && el('span', { class: 'sub' }, '…')),
-          std.source === 'set' && el('div', { class: 'sub' }, '배포본 표준보다 우선 적용'),
+  const rules = rulesOf(std.text)
+  const own = std.source === 'project'
+  const where =
+    std.source === 'project'
+      ? [el('code', {}, PROJECT_FILE), ` · 규칙 ${rules.length}개`, std.modified ? ` · ${day(std.modified)} 수정` : '']
+      : std.source === 'bundled'
+        ? ['플러그인 기본 표준 (zip) · 규칙 ', String(rules.length), '개']
+        : ['표준 없음 — AI 는 표준 판정 없이 답합니다']
+  const fallback = own ? (state.bundledRules ? `이 파일이 없으면 플러그인 기본 표준(zip, 규칙 ${state.bundledRules}개)을 씁니다` : '이 파일이 없으면 표준 없이 답합니다') : `${PROJECT_FILE} 를 만들면 이 프로젝트는 그 표준을 씁니다`
+  const confirm = state.confirm
+  return el(
+    'section',
+    { class: 'card', 'aria-labelledby': 'std-title' },
+    el('div', { class: 'head' }, el('h2', { id: 'std-title' }, '사내 SQL 표준 — 이 프로젝트'), el('span', { class: own ? 'tag' : 'tag off' }, own ? '팀 공유' : std.source === 'bundled' ? '플러그인 기본' : '없음')),
+    el('div', { class: 'sub' }, ...where, el('br'), el('span', { class: 'faint' }, fallback)),
+    rules.length > 0 &&
+      el(
+        'div',
+        {},
+        rules.slice(0, PREVIEW_RULES).map((rule) => el('div', { class: 'rule' }, el('b', {}, rule.id), el('span', {}, rule.text))),
+        rules.length > PREVIEW_RULES && el('div', { class: 'rule faint' }, el('span'), el('span', {}, `… ${rules.length - PREVIEW_RULES}개 더`)),
+      ),
+    confirm?.kind === 'reset' &&
+      el(
+        'div',
+        { class: 'msg warn', role: 'alertdialog', 'aria-label': '플러그인 기본으로' },
+        `${PROJECT_FILE} 를 지웁니다 — ${state.bundledRules ? '새 대화부터 플러그인 기본 표준을 씁니다' : '플러그인 기본 표준이 없어 표준 없이 답합니다'}. 커밋한 파일이면 지운 것도 커밋해야 팀에 반영됩니다.`,
+        el('div', { class: 'row', style: 'margin-top:8px' }, button('취소', () => ((state.confirm = undefined), render())), button('지우기', () => void resetStandard(), { primary: true })),
+      ),
+    confirm?.kind === 'replace' &&
+      el(
+        'div',
+        { class: 'msg warn', role: 'alertdialog', 'aria-label': '.md 로 바꾸기' },
+        `${confirm.name} (규칙 ${rulesOf(confirm.text).length}개) 로 ${PROJECT_FILE} 를 ${own ? '바꿉니다' : '만듭니다'} — 새 대화부터 적용되고, 커밋하면 팀에도 쓰입니다.`,
+        el(
+          'div',
+          { class: 'row', style: 'margin-top:8px' },
+          button('취소', () => ((state.confirm = undefined), render())),
+          button(own ? '바꾸기' : '만들기', () => void run('replace', () => saveStandard(confirm.text, () => (state.confirm = undefined))), { primary: true }),
         ),
       ),
-      el('div', { class: 'row' },
-        el('button', { type: 'button', disabled: state.stdBusy, onclick: pick }, std.source === 'set' ? '바꾸기' : '다른 문서 넣기'),
-        el('button', { type: 'button', onclick: () => ((state.stdView = !state.stdView), render()) }, state.stdView ? '내용 닫기' : '내용 보기'),
-        std.source === 'set' && el('button', { type: 'button', disabled: state.stdBusy, onclick: dropStandard }, '빼기'),
+    !confirm &&
+      el(
+        'div',
+        { class: 'row' },
+        button('고치기', () => ((state.edit = { text: std.text, mode: 'edit' }), (state.message = undefined), render()), { primary: true }),
+        button('.md 로 바꾸기', () => picker.click()),
+        own && button('플러그인 기본으로', () => ((state.confirm = { kind: 'reset' }), (state.message = undefined), render())),
       ),
-      state.stdView && el('pre', { class: 'viewer' }, std.text),
-    ],
-    state.stdBusy && el('div', { class: 'note' }, '반영하는 중…'),
-    state.stdError && el('div', { class: 'error' }, state.stdError),
-    el('div', { class: 'note' }, '새 대화부터 적용됩니다. 이 PC 의 모든 프로젝트에 같이 적용됩니다.'),
+    message(state.message),
   )
 }
 
-// 서버 상태 — 앱의 mcp.status(띄우지 않고 봄), 떠 있을 때만 서버의 패널 전용 도구 server_status(접속하지 않고 연결 수)
-async function loadServer() {
-  try {
-    const status = await call('mcp.status')
-    let db
-    if (status.running) {
-      const output = await call('mcp.call', { tool: 'server_status', args: {} }).catch(() => undefined)
-      if (output && !output.isError) db = JSON.parse(output.text)
-    }
-    state.server = { ...status, db }
-  } catch {
-    state.server = null // 앱이 상태를 못 줌(이전 버전 · 프로젝트 없음) — 줄을 숨긴다
-  }
-  document.getElementById('srv')?.replaceWith(serverLine())
+/** 연결 요약 한 줄 — Oracle · tuner@127.0.0.1:1521/FREEPDB1 · 스키마 COM · 비밀번호 저장됨 */
+function connectionLine(view) {
+  const v = view.values
+  const db = DB_NAMES[v.db] ?? v.db
+  const address = v.host ? `${v.user ? `${v.user}@` : ''}${v.host}${v.port ? `:${v.port}` : ''}${v.service ? `/${v.service}` : ''}` : ''
+  const password = `비밀번호 ${view.saved.includes('password') ? '저장됨' : '없음'}`
+  return [db, address, v.schema && `스키마 ${v.schema}`, password].filter(Boolean).join(' · ')
 }
 
-const minutes = (ms) => `${Math.max(1, Math.round(ms / 60000))}분`
-function ago(at) {
-  const ms = Date.now() - at
-  return ms < 60000 ? '방금' : `${minutes(ms)} 전`
-}
-
-function serverLine() {
-  const server = state.server
-  if (!server) return el('div', { id: 'srv', hidden: true })
-  if (!server.running) return el('div', { id: 'srv', class: 'srv' }, el('span', { class: 'dot off' }), el('span', {}, '서버: 꺼짐 — 대화에서 처음 쓸 때 켜집니다'))
-  const parts = ['서버: 실행 중']
-  if (server.db) parts.push(server.db.openConnections > 0 ? `DB 연결 ${server.db.openConnections}개` : 'DB 연결 없음')
-  if (server.lastCallAt) parts.push(`마지막 호출 ${ago(server.lastCallAt)}`)
-  if (server.db?.idleCloseMs) parts.push(`${minutes(server.db.idleCloseMs)} 쉬면 DB 연결 닫음`)
-  parts.push(`${minutes(server.idleMs)} 쉬면 서버 내림`)
-  return el('div', { id: 'srv', class: 'srv' }, el('span', { class: 'dot' }), el('span', {}, parts.join(' · ')))
-}
-
-// 연결 탭이 보이는 동안 30초마다 다시 본다
-setInterval(() => {
-  if (state.tab === 'conn' && !document.hidden) loadServer()
-}, 30_000)
-
-// 결과 — 이 PC 에 남긴 최근 대화 20개(대화마다 한 줄, 2026-11-03 시안 "튜닝 결과 대화별 묶기") (서버의 패널 전용 도구 recent_results · forget_results · clear_results, AI 목록에는 없다). 결과마다 부른 대화가 있으면
-// [대화로 가기](chat.open), 그 대화가 지워졌으면 목록을 읽을 때 같이 지운다(chat.exists → forget_results).
-// 파일은 서버가 읽으므로 서버가 꺼져 있으면 목록을 못 본다 — 탭을 열었다고 서버를 띄우지는 않고, [서버 켜고 보기] 를 눌렀을 때만 띄운다
-async function loadResults(start = false) {
-  state.resultBusy = true
-  state.resultError = undefined
-  render()
-  try {
-    if (!start) {
-      const status = await call('mcp.status').catch(() => undefined)
-      if (status && !status.running) {
-        state.resultsOff = true
-        state.results = []
-        state.resultId = undefined
-        state.resultDetail = undefined
-        return
-      }
-    }
-    state.resultsOff = false
-    const output = await call('mcp.call', { tool: 'recent_results', args: {} })
-    if (output.isError) throw new Error(output.text)
-    state.results = await withoutDeleted(JSON.parse(output.text))
-    state.titles = await titlesOf(state.results)
-    if (state.resultId !== undefined && !state.results.some((item) => item.id === state.resultId)) {
-      state.resultId = undefined
-      state.resultDetail = undefined
-    }
-  } catch (error) {
-    state.results = state.results ?? []
-    state.resultError = text(error.message)
-  } finally {
-    state.resultBusy = false
-    render()
-  }
-}
-
-/** 지워진 대화의 결과는 이력에서도 지운다 — 앱에 아직 있는 대화인지(chat.exists)만 묻고, 없는 것은 서버에 forget_results.
- *  대화를 모르는 결과(대화 밖에서 부름 · 예전 결과)는 그대로 둔다. 묻기가 안 되면(권한 · 오류) 지우지 않고 목록만 보인다 */
-async function withoutDeleted(list) {
-  const ids = [...new Set(list.map((item) => item.conversation).filter(Boolean))].slice(0, 100)
-  if (ids.length === 0) return list
-  try {
-    const present = await call('chat.exists', { ids })
-    const gone = ids.filter((id) => present[id] === false)
-    if (gone.length === 0) return list
-    await call('mcp.call', { tool: 'forget_results', args: { conversations: gone } })
-    return list.filter((item) => !item.conversation || !gone.includes(item.conversation))
-  } catch {
-    return list
-  }
-}
-
-/** 대화 제목 (chat.titles) — 줄 이름으로 쓴다. 묻기가 안 되면(옛 앱 · 권한) 빈 것 → SQL 이름으로 */
-async function titlesOf(list) {
-  const ids = [...new Set(list.map((item) => item.conversation).filter(Boolean))].slice(0, 100)
-  if (ids.length === 0) return {}
-  try {
-    return (await call('chat.titles', { ids })) ?? {}
-  } catch {
-    return {}
-  }
-}
-
-/** 최근 것부터 놓인 결과 → 대화 묶음 (최근 대화부터). 대화를 모르는 결과는 하나가 묶음 하나. items 는 시간 순 */
-function groupsOf(list) {
-  const map = new Map()
-  for (const item of list) {
-    const key = item.conversation ?? `#${item.id}`
-    if (!map.has(key)) map.set(key, [])
-    map.get(key).push(item)
-  }
-  return [...map].map(([key, items]) => ({ key, conversation: items[0].conversation, items: [...items].reverse() }))
-}
-
-/** 묶음 이름 — 대화 제목, 없으면 첫 실행계획(예상 · 실측)의 SQL, 그것도 없으면 첫 결과의 이름 */
-function groupName(group) {
-  const title = group.conversation && state.titles[group.conversation]
-  if (title) return title
-  return (group.items.find((item) => item.tool === 'explain' || item.tool === 'runtime_plan') ?? group.items[0]).label
-}
-
-/** 시각 — 오늘이면 HH:MM, 어제면 "어제 HH:MM", 그 전이면 "M/D HH:MM" */
-function resultWhen(at) {
-  const date = new Date(at)
-  const today = new Date()
-  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
-  if (date.toDateString() === today.toDateString()) return clock(at)
-  if (date.toDateString() === yesterday.toDateString()) return `어제 ${clock(at)}`
-  return `${date.getMonth() + 1}/${date.getDate()} ${clock(at)}`
-}
-
-function spanOf(group) {
-  const first = group.items[0].at
-  const last = group.items[group.items.length - 1].at
-  if (clock(first) === clock(last) && new Date(first).toDateString() === new Date(last).toDateString()) return resultWhen(first)
-  return new Date(first).toDateString() === new Date(last).toDateString() ? `${resultWhen(first)}–${clock(last)}` : `${resultWhen(first)}–${resultWhen(last)}`
-}
-
-/** 묶음의 표시 — 단계 수(실행계획 · 실측 · 테이블) + 핵심 결과(compare 같음·%↓ / 결과 다름, 인덱스 제안, 오류) */
-function groupBadges(group) {
-  const count = (tool) => group.items.filter((item) => item.tool === tool && !item.isError).length
-  const badges = []
-  if (count('explain')) badges.push(`실행계획 ${count('explain')}`)
-  if (count('runtime_plan')) badges.push(`실측 ${count('runtime_plan')}`)
-  for (const badge of new Set(group.items.filter((item) => item.tool === 'compare' && !item.isError && item.badge).map((item) => item.badge))) badges.push(badge)
-  if (count('impact_check')) badges.push(`인덱스 제안 ${count('impact_check')}`)
-  if (count('table_info')) badges.push(`테이블 ${count('table_info')}`)
-  const errors = group.items.filter((item) => item.isError).length
-  if (errors) badges.push(`오류 ${errors}`)
-  return badges
-}
-
-/** 펼친 단계 — 시간 순, 연달아 나온 테이블 정보는 한 단계로 */
-function stepsOf(group) {
-  const steps = []
-  for (const item of group.items) {
-    const last = steps[steps.length - 1]
-    if (item.tool === 'table_info' && !item.isError && last?.kind === 'tables') last.items.push(item)
-    else steps.push(item.tool === 'table_info' && !item.isError ? { kind: 'tables', key: `t${item.id}`, items: [item] } : { kind: 'one', key: `r${item.id}`, item })
-  }
-  return steps
-}
-
-async function openConversation(id) {
-  try {
-    await call('chat.open', { id })
-  } catch (error) {
-    state.resultError = error.message === 'params-invalid' ? '그 대화를 찾지 못했습니다 — 지워졌거나 다른 프로젝트의 대화입니다' : text(error.message)
-    render()
-  }
-}
-
-async function clearResults() {
-  state.resultBusy = true
-  state.resultError = undefined
-  render()
-  try {
-    const output = await call('mcp.call', { tool: 'clear_results', args: {} })
-    if (output.isError) throw new Error(output.text)
-    state.results = []
-    state.resultId = undefined
-    state.resultDetail = undefined
-    state.clearing = false
-  } catch (error) {
-    state.resultError = text(error.message)
-  } finally {
-    state.resultBusy = false
-    render()
-  }
-}
-
-async function openResult(id) {
-  state.resultId = id
-  state.resultDetail = undefined
-  state.copied = false
-  render()
-  try {
-    const output = await call('mcp.call', { tool: 'recent_results', args: { id } })
-    if (output.isError) throw new Error(output.text)
-    state.resultDetail = JSON.parse(output.text)
-  } catch (error) {
-    state.resultError = text(error.message)
-  }
-  render()
-}
-
-const TOOL_NAME = { explain: '예상 실행계획', runtime_plan: '실제 실행계획', compare: 'compare', impact_check: '인덱스 영향 확인', table_info: '테이블 정보' }
-const clock = (at) => {
-  const date = new Date(at)
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-const badgeClass = (badge) => (/오류|다름/.test(badge) ? 'badge bad' : /↓/.test(badge) ? 'badge good' : /인덱스/.test(badge) ? 'badge warn' : 'badge')
-
-function resultsCard() {
-  const list = state.results
-  const detail = state.resultDetail
-  return el('div', { class: 'card' },
-    el('div', { class: 'row' }, el('h2', { class: 'grow' }, list && list.length ? `튜닝 이력 · 대화 ${groupsOf(list).length}개` : '튜닝 이력'), el('button', { type: 'button', disabled: state.resultBusy, onclick: () => loadResults() }, '새로고침')),
-    list === undefined && el('div', { class: 'sub' }, '불러오는 중…'),
-    state.resultsOff && el('div', { class: 'band off' }, el('span', { class: 'dot off' }), el('span', { class: 'grow' }, '서버가 꺼져 있습니다 — 대화에서 튜닝을 요청하면 서버가 켜지고 지난 결과도 함께 보입니다.'), el('button', { type: 'button', disabled: state.resultBusy, onclick: () => loadResults(true) }, '서버 켜고 보기')),
-    !state.resultsOff && list && list.length === 0 && !state.resultError && el('div', { class: 'band off' }, el('span', { class: 'dot off' }), el('span', { class: 'grow' }, '아직 결과가 없습니다. 대화에서 튜닝을 요청하면 실행계획 · compare · 인덱스 제안이 여기에 모입니다.')),
-    list && list.length > 0 && el('div', { class: 'res', role: 'list' }, groupsOf(list).map((group) => groupRow(group))),
-    state.resultError && el('div', { class: 'error' }, state.resultError),
-    !state.resultsOff && list && list.length > 0 && (state.clearing
-      ? el('div', { class: 'row note' }, el('span', { class: 'grow' }, `대화 ${groupsOf(list).length}개의 결과를 모두 지울까요? 되돌릴 수 없습니다.`), el('button', { type: 'button', class: 'primary', disabled: state.resultBusy, onclick: clearResults }, '지우기'), el('button', { type: 'button', onclick: () => ((state.clearing = false), render()) }, '취소'))
-      : el('div', { class: 'row' }, el('span', { class: 'grow' }), el('button', { type: 'button', class: 'quiet', onclick: () => ((state.clearing = true), render()) }, '모두 지우기'))),
-    el('div', { class: 'note' }, '결과는 대화마다 한 줄로, 이 PC 에 최근 대화 20개까지 남아 앱을 다시 켜도 보입니다. 대화를 지우면 그 대화의 결과도 지워집니다. 데이터 행 · 실제 바인드 값을 담는 query · captured_sql 결과는 남기지 않습니다.'),
-  )
-}
-
-/** 대화 한 줄 — 누르면 펼쳐 단계(시간 순)와, 고른 단계의 결과 글 */
-function groupRow(group) {
-  const open = state.groupOpen === group.key
-  return el('div', { class: `conv${open ? ' open' : ''}`, role: 'listitem' },
-    el('button', {
-      type: 'button', class: 'conv-head', 'aria-expanded': String(open),
-      onclick: () => {
-        state.groupOpen = open ? undefined : group.key
-        state.tablesOpen = undefined
-        state.resultId = undefined
-        state.resultDetail = undefined
-        render()
-      },
-    },
-      el('span', { class: 'chev', 'aria-hidden': 'true' }, open ? '▾' : '▸'),
-      el('span', { class: 'conv-title grow', title: groupName(group) }, groupName(group)),
-      el('span', { class: 'res-time' }, spanOf(group)),
-    ),
-    el('div', { class: 'conv-badges' }, groupBadges(group).map((badge) => el('span', { class: badgeClass(badge) }, badge))),
-    open && el('div', { class: 'steps' }, stepsOf(group).map((step) => stepRow(step))),
-    open && state.resultId !== undefined && group.items.some((item) => item.id === state.resultId) && detailCard(),
-  )
-}
-
-function stepRow(step) {
-  if (step.kind === 'one') {
-    const item = step.item
-    return el('button', { type: 'button', class: 'step', 'aria-selected': String(item.id === state.resultId), onclick: () => openResult(item.id) },
-      el('span', { class: 'step-kind' }, item.isError ? `${TOOL_NAME[item.tool] ?? item.tool} · 오류` : TOOL_NAME[item.tool] ?? item.tool),
-      el('span', { class: 'grow mono step-label', title: item.label }, item.label),
-      item.badge && !item.isError && item.tool === 'compare' && el('span', { class: badgeClass(item.badge) }, item.badge),
-      el('span', { class: 'res-time' }, clock(item.at)),
-    )
-  }
-  const open = state.tablesOpen === step.key
-  const first = step.items[0].at
-  const last = step.items[step.items.length - 1].at
-  return el('div', {},
-    el('button', { type: 'button', class: 'step dim', 'aria-expanded': String(open), onclick: () => ((state.tablesOpen = open ? undefined : step.key), render()) },
-      el('span', { class: 'step-kind' }, `테이블 정보 ${step.items.length}개`),
-      el('span', { class: 'grow mono step-label' }, step.items.map((item) => item.label).join(' · ')),
-      el('span', { class: 'res-time' }, clock(first) === clock(last) ? clock(first) : `${clock(first)}–${clock(last)}`),
-    ),
-    open && el('div', { class: 'step-tables' }, step.items.map((item) =>
-      el('button', { type: 'button', class: 'step sub-step', 'aria-selected': String(item.id === state.resultId), onclick: () => openResult(item.id) },
-        el('span', { class: 'grow mono step-label' }, item.label),
-        el('span', { class: 'res-time' }, clock(item.at)),
-      ))),
-  )
-}
-
-/** 고른 단계의 결과 글 — [복사] · [대화로 가기] */
-function detailCard() {
-  const detail = state.resultDetail
-  return el('div', { class: 'card', style: 'margin:0 10px 10px;padding:12px;gap:8px;background:var(--bg)' },
-    detail === undefined ? el('div', { class: 'sub' }, '불러오는 중…') : [
-      el('div', { class: 'row' },
-        el('b', { class: 'grow' }, `${TOOL_NAME[detail.tool] ?? detail.tool} · `, el('span', { class: 'mono', style: 'font-weight:400' }, detail.label)),
-        el('span', { class: 'sub' }, clock(detail.at)),
-        el('button', {
-          type: 'button',
-          onclick: async () => {
-            try {
-              await navigator.clipboard.writeText(detail.text)
-              state.copied = true
-              render()
-            } catch {
-              // 복사가 막힌 곳 — 글을 골라 두어 사용자가 직접 복사한다
-              const pre = document.getElementById('result-text')
-              if (pre) getSelection()?.selectAllChildren(pre)
-            }
+function connectionCard() {
+  const view = state.conn
+  const check = state.check
+  const missing = view && !view.error ? view.missing : []
+  return el(
+    'section',
+    { class: 'card', 'aria-labelledby': 'conn-title' },
+    el('h2', { id: 'conn-title' }, '연결'),
+    view?.error
+      ? message({ tone: 'bad', text: view.error })
+      : el(
+          'div',
+          { class: 'conn' },
+          el('span', { class: `dot${check ? (check.isError ? ' bad' : ' ok') : ''}`, 'aria-hidden': 'true' }),
+          el('span', {}, connectionLine(view), view.target === 'project' && el('span', { class: 'faint' }, ' (이 프로젝트 값)')),
+        ),
+    missing.length > 0 && el('div', { class: 'sub' }, `넣어야 할 칸: ${missing.map((key) => LABELS[key] ?? key).join(', ')}`),
+    el(
+      'div',
+      { class: 'row' },
+      button(state.busy === 'check' ? '확인하는 중…' : '연결 확인', () =>
+        void run(
+          'check',
+          async () => {
+            state.check = undefined
+            state.check = await call('settings.check')
           },
-        }, state.copied ? '복사됨' : '복사'),
-        detail.conversation && el('button', { type: 'button', class: 'link', onclick: () => openConversation(detail.conversation) }, '대화로 가기'),
+          'connMessage',
+        ),
       ),
-      el('pre', { class: 'viewer', id: 'result-text' }, detail.text),
-    ],
+      button('연결 정보 고치기', () =>
+        void run(
+          'open',
+          async () => {
+            const { saved } = await call('settings.open')
+            if (!saved) return
+            state.check = undefined
+            await loadConnection()
+          },
+          'connMessage',
+        ),
+      ),
+    ),
+    check && message({ tone: check.isError ? 'bad' : 'ok', text: check.text || (check.isError ? '연결 실패' : '연결됨') }),
+    message(state.connMessage),
   )
 }
 
-function tabs() {
-  const tab = (id, label) => el('button', {
-    type: 'button', role: 'tab', 'aria-selected': String(state.tab === id),
-    onclick: () => {
-      state.tab = id
-      state.menu = false
-      render()
-      if (id === 'results') loadResults()
-      if (id === 'conn') loadServer()
-    },
-  }, label)
-  return el('div', { class: 'tabs', role: 'tablist' }, tab('conn', '연결'), tab('std', '사내 표준'), tab('results', '결과'))
+/** 아주 작은 Markdown 미리보기 — 제목 · 목록 · 굵게 · 코드만 (글은 모두 이스케이프한다) */
+function markdown(text) {
+  const box = el('div', { class: 'preview', role: 'document', 'aria-label': '미리보기' })
+  let list
+  const inline = (line) => {
+    const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/)
+    return parts.map((part) => (/^\*\*.+\*\*$/.test(part) ? el('b', {}, part.slice(2, -2)) : /^`.+`$/.test(part) ? el('code', {}, part.slice(1, -1)) : part))
+  }
+  for (const raw of text.split('\n')) {
+    const line = raw.trimEnd()
+    const heading = /^(#{1,3})\s+(.*)$/.exec(line)
+    const item = /^\s*[-*+]\s+(.*)$/.exec(line) ?? /^\s*\d+[.)]\s+(.*)$/.exec(line)
+    if (item) {
+      if (!list) box.append((list = el('ul')))
+      list.append(el('li', {}, inline(item[1])))
+      continue
+    }
+    list = undefined
+    if (heading) box.append(el(`h${heading[1].length}`, {}, inline(heading[2])))
+    else if (line.trim()) box.append(el('p', {}, inline(line)))
+  }
+  return box
+}
+
+function editView() {
+  const edit = state.edit
+  const own = state.std.source === 'project'
+  const seg = (mode, label) =>
+    el('button', { type: 'button', role: 'radio', 'aria-checked': String(edit.mode === mode), onclick: () => ((edit.mode = mode), render()) }, label)
+  const area = el('textarea', { 'aria-label': '표준 문서 내용', spellcheck: 'false', placeholder: '# 사내 SQL 개발 표준\n\n- **SQL-01** 규칙 …' })
+  area.value = edit.text
+  area.addEventListener('input', () => (edit.text = area.value))
+  return el(
+    'div',
+    { class: 'edit' },
+    el(
+      'div',
+      { class: 'edit-top' },
+      el('div', { class: 'edit-title' }, el('b', {}, '사내 SQL 표준 고치기'), el('span', { class: 'sub' }, el('code', {}, PROJECT_FILE), state.project ? ` · ${state.project}` : '')),
+      el('div', { class: 'seg', role: 'radiogroup', 'aria-label': '보기' }, seg('edit', '편집'), seg('preview', '미리보기')),
+    ),
+    el('div', { class: 'edit-body' }, edit.mode === 'edit' ? area : markdown(edit.text)),
+    el('div', { class: 'edit-note' }, el('p', { class: 'msg warn', style: 'margin:0' }, '저장하면 이 프로젝트 파일이 바뀝니다 — ', el('b', {}, '새 대화부터'), ' 적용되고, 커밋하면 팀원에게도 같은 표준이 쓰입니다.')),
+    state.message?.tone === 'bad' && el('div', { class: 'edit-note' }, message(state.message)),
+    el(
+      'div',
+      { class: 'edit-foot' },
+      button('취소', () => ((state.edit = undefined), (state.message = undefined), render())),
+      el(
+        'div',
+        { class: 'row' },
+        button('파일로 열기', () => void call('project.openFile', { path: PROJECT_FILE }).catch((error) => ((state.message = { tone: 'bad', text: errorText(error) }), render())), { disabled: !own }),
+        button(state.busy === 'save' ? '저장하는 중…' : '저장', () => void run('save', () => saveStandard(edit.text, () => (state.edit = undefined))), { primary: true, disabled: !edit.text.trim() }),
+      ),
+    ),
+  )
 }
 
 function render() {
-  const item = dbms(state.form.db)
   const app = document.getElementById('app')
-  // 탭에 따라 빠지는 카드(false)는 그리지 않는다
-  app.replaceChildren(...[
-    el('div', { class: 'card' },
-      el('div', {}, el('h1', {}, 'SQL 튜닝'), el('div', { class: 'sub' }, '개발 DB 를 조회만 해서 느린 SQL · MyBatis 매퍼 · JPA 코드를 튜닝합니다. 튜닝은 대화에서 요청하세요.')),
+  if (state.edit) return app.replaceChildren(editView())
+  app.replaceChildren(
+    el(
+      'main',
+      {},
+      state.std ? standardCard() : el('div', { class: 'card sub' }, '불러오는 중…'),
+      state.conn ? connectionCard() : undefined,
+      el('p', { class: 'note' }, '이 패널은 SQL 튜닝을 켠 프로젝트에서만 보입니다. 표준과 연결 정보도 이 프로젝트 것입니다.'),
     ),
-    tabs(),
-    state.tab === 'std' && standardCard(),
-    state.tab === 'results' && resultsCard(),
-    state.tab === 'conn' && el('div', { class: 'card' },
-      el('h2', {}, '개발 DB'),
-      band(),
-      serverLine(),
-      dbmsField(),
-      pasteBox(),
-      el('fieldset', {},
-        el('legend', {}, '접속'),
-        el('div', { class: 'g2 hp' }, input('host', '호스트'), input('port', '포트', { inputmode: 'numeric' })),
-        el('div', { class: 'g2' }, input('service', item.serviceLabel), el('div', { class: 'f' }, el('label', { for: 'schema' }, '기본 스키마 ', el('span', { class: 'opt' }, '선택')), el('input', { id: 'schema', value: state.form.schema, autocomplete: 'off', spellcheck: 'false', oninput: (event) => ((state.form.schema = event.target.value), edited()) }))),
-      ),
-      el('fieldset', {},
-        el('legend', {}, '조회 전용 계정'),
-        el('div', { class: 'g2' },
-          input('user', '아이디'),
-          el('div', { class: 'f' },
-            el('label', { for: 'password' }, '비밀번호'),
-            el('div', { class: 'secret' },
-              el('input', { id: 'password', type: state.show ? 'text' : 'password', value: state.form.password, autocomplete: 'off', placeholder: state.passwordSaved ? '저장됨 — 바꿀 때만' : '', oninput: (event) => ((state.form.password = event.target.value), edited()) }),
-              el('button', { type: 'button', class: 'eye', onclick: () => ((state.show = !state.show), render()) }, state.show ? '숨기기' : '보기'),
-            ),
-          ),
-        ),
-      ),
-      el('div', { class: 'row' },
-        el('button', { class: 'primary', disabled: state.busy, onclick: save }, '저장하고 연결 확인'),
-        state.saved && el('button', { disabled: state.busy || state.check?.phase === 'checking', onclick: () => busy(check) }, '연결 확인'),
-        el('span', { class: 'grow' }),
-        state.saved && el('button', { class: 'quiet', disabled: state.busy, onclick: clear }, '지우기'),
-      ),
-      el('div', { class: 'lock' }, '🔒 비밀번호는 이 기기에 암호화 보관 · 이 화면도 다시 못 읽음. 계정은 조회 전용으로 만드세요.'),
-      result(),
-    ),
-    state.tab === 'conn' && el('div', { class: 'card' },
-      el('h2', {}, '쓰는 법'),
-      el('ol', {},
-        el('li', {}, '대화에서 "이 쿼리가 느려", "EgovXxx_SQL_oracle.xml 의 selectXxx 튜닝해 줘" 처럼 요청합니다.'),
-        el('li', {}, 'AI 가 sql-tuning 스킬을 따라 실행계획 · 테이블 · 실제로 들어온 SQL 을 조회하고, ① SQL 고쳐 쓰기 → ② 힌트 → ③ 인덱스(제안만) 순서로 답합니다.'),
-        el('li', {}, 'DB 연결은 처음 쓸 때 열고 쓰는 동안 유지합니다. 한동안 안 쓰면 닫습니다.'),
-      ),
-    ),
-  ].filter(Boolean))
+  )
 }
 
-// 드롭다운 바깥을 누르면 닫는다
-document.addEventListener('mousedown', (event) => {
-  if (state.menu && !document.getElementById('dd')?.contains(event.target)) {
-    state.menu = false
-    render()
-  }
+void load().catch((error) => {
+  document.getElementById('app').replaceChildren(el('main', {}, message({ tone: 'bad', text: errorText(error) })))
 })
-
-async function start() {
-  try {
-    await load()
-  } catch (error) {
-    state.error = text(error.message)
-  }
-  render()
-  try {
-    await loadStandard()
-  } catch (error) {
-    state.std = null
-    state.stdError = text(error.message)
-  }
-  render()
-  await loadServer()
-}
-start()
 </script>
 </body>
 </html>

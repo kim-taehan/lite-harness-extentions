@@ -1,0 +1,42 @@
+{
+  "id": "ui-test",
+  "name": "UI 테스트 (베타)",
+  "description": "(베타) 화면 소스를 읽어 시나리오 초안을 대화로 고르고, 테스트 코드를 만들어 PC 의 Chrome · Edge 로 단계마다 스크린샷을 찍으며 돌린 뒤, 한 파일 HTML 결과서와 지난 수행 비교를 남깁니다",
+  "details": "베타(실험실) 기능입니다. 설치할 때 쓸 범위(이 프로젝트 권장)를 고르고 대상 주소 · 브라우저 · 테스트 계정을 넣은 뒤 [연결 확인] 으로 그 주소가 열리는지 봅니다(화면 없이 한 번 열어 제목 · HTTP 상태). 비밀번호는 앱이 이 기기에 암호화해 보관하고 결과서 · 도구 결과에 넣지 않습니다.\n대화에서 \"가입설계 화면 테스트 구성해 줘\" 처럼 화면(파일 또는 주소)을 가리키면 AI 가 ui-test 스킬을 따라 화면 소스(필요하면 백엔드 코드 · DB 조회 도구)를 읽고 시나리오 초안을 번호 목록으로 보인 뒤 여러 개 고르기 카드로 묻습니다. 고른 것만 테스트 폴더(기본 ui-tests/<묶음>/)에 시나리오 md 로 저장하고, 옆에 같은 이름의 .spec.mjs 코드를 만들어 브라우저 창을 띄워 돌립니다. 결과서는 결과서 폴더(기본 ui-tests/_reports/<묶음>/<날짜-시각>/index.html) 에 한 파일로 — 스크린샷이 들어 있어 그대로 보내고, 인쇄하면 PDF 가 됩니다.\n오른쪽 패널의 UI 테스트 탭(+ 메뉴)에서 묶음 목록 · 최근 이력(결과서 열기) · [다시 수행 ▾](전체 · 실패만 · 시나리오 고르기 · 보면서/화면 없이) · 지금 수행의 단계별 진행과 [멈추기] 를 봅니다. 다시 수행하면 지난 수행과 비교(새로 실패 · 고쳐짐 · 그대로 실패)를 보여 줍니다.\n브라우저는 내려받지 않고 PC 에 설치된 Chrome(없으면 Edge)을 씁니다. 확인(DB): 단계는 실행기가 돌리지 않고 대화에서만 확인합니다.\n유지보수 · 보강(0.2.0): 시나리오가 바뀌면 \"코드 낡음\", 시나리오를 쓸 때 읽은 화면 · 서버 코드가 바뀌면 \"코드 바뀜\" 을 표시하고 AI 가 코드를 다시 만듭니다. 실패는 셀렉터 · 기다림 · 확인 값 · 이동 · 코드 오류로 어림해 가르고, 패널의 [AI 에게 맡기기] · [보강] 은 새 대화에 요청을 보냅니다(chat 권한). 보강은 빠진 확인 · 데이터 변형(## 데이터 표 — 행마다 한 번씩 돈다) · 변형 시나리오 · 코드 바뀜 제안을 고르게 하고, 묶음마다 검증 · 업무 규칙 덮임을 어림값으로 보입니다. 긴 묶음은 run 이 먼저 돌아오고 진행은 패널 · report 로 봅니다.",
+  "version": "0.2.0",
+  "entry": "index.html",
+  "permissions": [
+    "secrets",
+    "mcp",
+    "project",
+    "chat"
+  ],
+  "settings": [
+    { "key": "baseUrl", "label": "대상 주소", "type": "text", "required": true },
+    { "key": "browser", "label": "브라우저", "type": "select", "options": ["Chrome", "Edge"] },
+    { "key": "user", "label": "테스트 계정 아이디", "type": "text" },
+    { "key": "password", "label": "테스트 계정 비밀번호", "type": "secret" },
+    { "key": "testDir", "label": "테스트 폴더 (비우면 ui-tests — 프로젝트 안)", "type": "text" },
+    { "key": "reportDir", "label": "결과서 폴더 (비우면 ui-tests/_reports — 절대 경로도 됨)", "type": "text" }
+  ],
+  "settingsCheck": "check",
+  "settingsPer": "project",
+  "mcp": {
+    "command": "server/ui-test.mjs",
+    "env": {
+      "UI_TEST_BASE_URL": "${storage:baseUrl}",
+      "UI_TEST_BROWSER": "${storage:browser}",
+      "UI_TEST_USER": "${storage:user}",
+      "UI_TEST_PASSWORD": "${secret:password}",
+      "UI_TEST_DIR": "${storage:testDir}",
+      "UI_TEST_REPORT_DIR": "${storage:reportDir}",
+      "UI_TEST_DATA_DIR": "${dataDir}"
+    },
+    "idleMs": 1800000,
+    "timeoutMs": 1800000,
+    "panelTools": ["progress", "stop", "shot"]
+  },
+  "skills": [
+    "skills/ui-test"
+  ]
+}

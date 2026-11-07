@@ -1,8 +1,8 @@
-// Chrome in Lite Harness 묶기 — `node sources/chrome-browser/build.mjs` → dist 용 zip 하나(stage 폴더를 묶음)
+// Chrome in Lite Harness 묶기 — `node extensions/chrome-browser/build.mjs` → build/chrome-browser.zip (stage 폴더를 묶음)
 // 1) @playwright/mcp · playwright-core 를 npm 레지스트리에서 고정 버전으로 받아 sha512(integrity)를 박아 둔 값과 댄다 (앱의 옛 scripts/fetch-browser.mjs 와 같은 값)
 // 2) 안 쓰는 폴더를 뺀다 (types · bin · lib/vite — 18MB → 7.6MB)
 // 3) extension.json · index.html · server.mjs + node_modules 를 zip 맨 위에 묶는다
-// 그다음 `npm run release -- --zip <이 zip>` 으로 catalog 에 올린다 (순수 JS 라 플랫폼 구분 없음)
+// `npm run release chrome-browser` 가 이 스크립트를 돌리고 그 zip 을 catalog 에 올린다 (순수 JS 라 플랫폼 구분 없음)
 // 버전을 올릴 때: 0.0.x + playwright alpha 라 도구 이름이 바뀐다 — server.mjs 의 DENIED 를 새 tools/list 와 다시 댄다
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'

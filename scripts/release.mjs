@@ -1,5 +1,6 @@
-// 확장 내보내기 — `npm run release <id 또는 폴더>` · `npm run release -- --all`
-// extensions/<폴더>/ 의 파일을 폴더 없이 zip 으로 묶어 dist/<id>-<version>.zip 에 두고, sha256 과 함께 catalog.json 의 그 항목을 extension.json 으로 갱신한다.
+// 확장 내보내기 — `npm run release <id 또는 폴더> [--platform darwin-arm64]` · `npm run release -- --all`
+// 폴더에 build.mjs 가 있으면 그것을 돌려 build/<폴더>[-<platform>].zip 을 받아 --zip 과 같은 길로 올린다 (sonarqube 처럼 플랫폼 전용이면 --platform)
+// 없으면 extensions/<폴더>/ 의 파일을 폴더 없이 zip 으로 묶어 dist/<id>-<version>.zip 에 두고, sha256 과 함께 catalog.json 의 그 항목을 extension.json 으로 갱신한다.
 // 앱(Lite Harness)은 catalog.json 을 읽고, 받은 zip 의 sha256 이 같을 때만 설치한다. 의존성 없음 — 시스템 zip 을 쓴다.
 // 옛 zip 은 지운다(같은 id 의 dist/<id>-*.zip 중 새 버전만 남긴다) — 저장소에 옛 버전이 쌓이지 않게. 되돌리기는 git 기록으로.
 // extension.json 에 "changes": ["바뀐 것", …] 를 적으면 catalog 에 실려 앱의 업데이트 창에 보인다 (선택)
@@ -15,15 +16,25 @@ const catalogFile = path.join(root, 'catalog.json')
 const categoriesFile = path.join(root, 'categories.json')
 const VERSION = /^\d+\.\d+\.\d+$/
 const CATEGORIES = ['game', 'dev-tool', 'locale']
+const MANIFESTS = ['extension.json', 'plugin.json']
+
+const manifestFile = (folder) => MANIFESTS.map((name) => path.join(extensionsDir, folder, name)).find((file) => existsSync(file))
 
 function folders() {
   return readdirSync(extensionsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && existsSync(path.join(extensionsDir, entry.name, 'extension.json')))
+    .filter((entry) => entry.isDirectory() && manifestFile(entry.name))
     .map((entry) => entry.name)
 }
 
 function manifestOf(folder) {
-  return JSON.parse(readFileSync(path.join(extensionsDir, folder, 'extension.json'), 'utf8'))
+  return JSON.parse(readFileSync(manifestFile(folder), 'utf8'))
+}
+
+function zipManifest(file) {
+  const listed = execFileSync('unzip', ['-Z1', file], { encoding: 'utf8' }).split('\n')
+  const name = MANIFESTS.find((candidate) => listed.includes(candidate))
+  if (!name) throw new Error(`${file}: zip 맨 위에 ${MANIFESTS.join(' 또는 ')} 이 없습니다`)
+  return JSON.parse(execFileSync('unzip', ['-p', file, name], { encoding: 'utf8' }))
 }
 
 function categoryOf(id) {
@@ -47,7 +58,13 @@ function extra(manifest, zipFile) {
   }
 }
 
-function release(folder, catalog) {
+function release(folder, platform, catalog) {
+  const build = path.join(extensionsDir, folder, 'build.mjs')
+  if (existsSync(build)) {
+    execFileSync(process.execPath, [build, ...(platform ? ['--platform', platform] : [])], { stdio: 'inherit' })
+    return releaseZip(path.join(root, 'build', `${folder}${platform ? `-${platform}` : ''}.zip`), platform, catalog)
+  }
+  if (platform) throw new Error(`${folder}: build.mjs 가 없는 확장은 --platform 을 받지 않습니다`)
   const manifest = manifestOf(folder)
   const { id, name, description, version } = manifest
   if (!id || !VERSION.test(version ?? '')) throw new Error(`${folder}: extension.json 의 id·version(1.2.3) 이 필요합니다`)
@@ -73,9 +90,9 @@ function release(folder, catalog) {
 /** 따로 묶은 zip 을 올린다 (SonarQube 처럼 플랫폼 전용 실행 파일이 든 확장) — zip 안의 extension.json 으로 항목을 만들고, platform 이 있으면
  *  dist/<id>-<version>-<platform>.zip 로 둔다. 앱은 지금 PC 의 `<process.platform>-<process.arch>`(예: darwin-arm64 · win32-x64)와 같은 것만 보인다 */
 function releaseZip(file, platform, catalog) {
-  const manifest = JSON.parse(execFileSync('unzip', ['-p', file, 'extension.json'], { encoding: 'utf8' }))
+  const manifest = zipManifest(file)
   const { id, name, description, version } = manifest
-  if (!id || !VERSION.test(version ?? '')) throw new Error(`${file}: zip 안 extension.json 의 id·version 이 필요합니다`)
+  if (!id || !VERSION.test(version ?? '')) throw new Error(`${file}: zip 안 manifest 의 id·version 이 필요합니다`)
   if (platform !== undefined && !/^[a-z0-9]+-[a-z0-9]+$/.test(platform)) throw new Error(`--platform 은 darwin-arm64 · win32-x64 꼴입니다`)
   const category = categoryOf(id)
   const zipName = `${id}-${version}${platform ? `-${platform}` : ''}.zip`
@@ -93,22 +110,28 @@ function releaseZip(file, platform, catalog) {
 
 const args = process.argv.slice(2)
 if (args.length === 0) {
-  console.error('쓰는 법: npm run release <id 또는 폴더> · npm run release -- --all · npm run release -- --zip <묶은.zip> [--platform darwin-arm64]')
+  console.error('쓰는 법: npm run release <id 또는 폴더> [--platform darwin-arm64] · npm run release -- --all · npm run release -- --zip <묶은.zip> [--platform darwin-arm64]')
   process.exit(1)
 }
 mkdirSync(distDir, { recursive: true })
 const catalog = readCatalog()
-const zipAt = args.indexOf('--zip')
-if (zipAt !== -1) {
-  const platformAt = args.indexOf('--platform')
-  releaseZip(path.resolve(args[zipAt + 1]), platformAt === -1 ? undefined : args[platformAt + 1], catalog)
+const valueOf = (flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined)
+const platform = valueOf('--platform')
+const zip = valueOf('--zip')
+if (zip) {
+  releaseZip(path.resolve(zip), platform, catalog)
   writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`)
   process.exit(0)
 }
 const all = folders()
-const targets = args.includes('--all') ? all : args.map((arg) => all.find((folder) => folder === arg || manifestOf(folder).id === arg) ?? arg)
+const named = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--platform')
+const platformOnly = (folder) => catalog.extensions.some((entry) => entry.id === manifestOf(folder).id && entry.platform)
+const skipped = args.includes('--all') && !platform ? all.filter(platformOnly) : []
+for (const folder of skipped) console.log(`- ${folder} 건너뜀 (플랫폼 전용 — --platform 으로 따로 올린다)`)
+const targets = args.includes('--all') ? all.filter((folder) => !skipped.includes(folder)) : named.map((arg) => all.find((folder) => folder === arg || manifestOf(folder).id === arg) ?? arg)
 for (const folder of targets) {
   if (!all.includes(folder)) throw new Error(`extensions/${folder} 가 없습니다`)
-  release(folder, catalog)
+  categoryOf(manifestOf(folder).id)
 }
+for (const folder of targets) release(folder, platform, catalog)
 writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`)
