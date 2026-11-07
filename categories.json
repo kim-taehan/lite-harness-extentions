@@ -10,6 +10,5 @@
   "tetris-demo": "game",
   "token-pet": "game",
   "ui-test": "dev-tool",
-  "vi-pack": "locale",
   "zh-cn-pack": "locale"
 }
