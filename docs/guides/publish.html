@@ -106,6 +106,18 @@ git push -u origin plugin/hello-panel-0.1.0     # 그리고 main 으로 PR</code
 <div class="code"><div class="file">터미널</div><pre><code>npm run release -- sonarqube --platform darwin-arm64     # darwin-arm64 · darwin-x64 · win32-x64</code></pre></div>
 <p><code>platform</code> 이 없는 항목은 모든 PC 에, 있는 항목은 <code>&lt;os&gt;-&lt;cpu&gt;</code>(Node 의 <code>process.platform</code>-<code>process.arch</code>)가 같은 PC 에만 보입니다.</p>
 
+<h2 id="unlist">목록에서 내리기</h2>
+<p>원본은 두고 [플러그인 둘러보기] 에서만 내리려면 <code>categories.json</code> 에 분류 대신 <code>unlisted</code> 를 적고 release 를 한 번 돌립니다.</p>
+<div class="code"><div class="file">categories.json · 터미널</div><pre><code>"vi-pack": "unlisted"
+
+npm run release vi-pack      # → - vi-pack 목록에서 내림 (unlisted)</code></pre></div>
+<ul>
+  <li>release 는 돌 때마다 <code>unlisted</code> 의 catalog 항목과 dist zip(플랫폼 zip 포함)을 지웁니다. <code>plugins/&lt;id&gt;/</code> 는 그대로 둡니다.</li>
+  <li><code>--all</code> 은 건너뛰고, 이름으로 불러도 묶지 않습니다. 다시 올리려면 분류를 적고 release 합니다.</li>
+  <li>아예 없애려면 원본 폴더 · dist zip · catalog 항목 · categories 한 줄을 지웁니다 — release 는 catalog 에서 항목을 지우지 않으니 catalog 는 손으로 고칩니다.</li>
+  <li>어느 쪽이든 <strong>이미 설치한 PC 에서는 그대로 남습니다</strong> — 앱은 catalog 에서 빠진 플러그인을 지우지 않습니다.</li>
+</ul>
+
 <h2 id="checklist">올리기 전 확인</h2>
 <div class="box">
   <ul>
@@ -139,6 +151,7 @@ git push -u origin plugin/hello-panel-0.1.0     # 그리고 main 으로 PR</code
   <a href="#push">4. 올리기</a>
   <a href="#versions">버전 규칙</a>
   <a href="#platform">플랫폼 전용</a>
+  <a href="#unlist">목록에서 내리기</a>
   <a href="#checklist">올리기 전 확인</a>
 </nav>
 </div>
